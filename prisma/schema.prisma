@@ -1,0 +1,254 @@
+// ============================================
+// 레드버튼(RedButton) 태블릿 앱 클론 - DB 스키마
+// Stack: Prisma + MySQL
+// ============================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// 1. 매장 / 테이블 (Store & Table)
+// ============================================
+
+/// 매장 정보 (멀티 매장 대응)
+model Store {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(100)
+  address   String?  @db.VarChar(255)
+  phone     String?  @db.VarChar(20)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tables Table[]
+  orders Order[]
+
+  @@map("stores")
+}
+
+/// 매장 내 테이블 (태블릿이 배치되는 단위)
+model Table {
+  id       Int     @id @default(autoincrement())
+  storeId  Int
+  tableNo  String  @db.VarChar(10)
+  seats    Int     @default(4)
+  isActive Boolean @default(true)
+
+  store  Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  orders Order[]
+
+  @@unique([storeId, tableNo])
+  @@map("tables")
+}
+
+// ============================================
+// 2. 카테고리 (게임 / 음식 공통 분류)
+// ============================================
+
+enum CategoryType {
+  GAME
+  FOOD
+}
+
+/// 카테고리 (게임 장르 & F&B 탭 메뉴 통합)
+model Category {
+  id           Int          @id @default(autoincrement())
+  type         CategoryType
+  name         String       @db.VarChar(50)
+  displayOrder Int          @default(0)
+  isActive     Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+
+  games Game[]
+  menus Menu[]
+
+  @@unique([type, name])
+  @@map("categories")
+}
+
+// ============================================
+// 3. 보드게임 (Game) + 태그 M:N 필터링
+// ============================================
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+  EXPERT
+}
+
+/// 보드게임
+model Game {
+  id           Int        @id @default(autoincrement())
+  categoryId   Int
+  title        String     @db.VarChar(100)
+  description  String?    @db.Text
+  thumbnailUrl String?    @db.VarChar(500)
+  videoUrl     String?    @db.VarChar(500)
+  minPlayers   Int        @default(2)
+  maxPlayers   Int        @default(4)
+  playTime     Int?
+  difficulty   Difficulty @default(MEDIUM)
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  category Category  @relation(fields: [categoryId], references: [id])
+  tags     GameTag[]
+
+  @@index([categoryId])
+  @@index([difficulty])
+  @@map("games")
+}
+
+/// 태그 (필터링 기준: 인원수, 장르, 테마 등 확장 가능)
+model Tag {
+  id           Int    @id @default(autoincrement())
+  group        String @db.VarChar(30) // "genre", "theme", "player_count"
+  value        String @db.VarChar(50) // "전략", "2~4인", "파티"
+  displayOrder Int    @default(0)
+
+  games GameTag[]
+
+  @@unique([group, value])
+  @@map("tags")
+}
+
+/// Game ↔ Tag M:N 중간 테이블
+model GameTag {
+  gameId Int
+  tagId  Int
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([gameId, tagId])
+  @@map("game_tags")
+}
+
+// ============================================
+// 4. F&B 메뉴 (Menu) + 옵션 그룹핑
+// ============================================
+
+/// F&B 메뉴 아이템
+model Menu {
+  id           Int      @id @default(autoincrement())
+  categoryId   Int
+  name         String   @db.VarChar(100)
+  description  String?  @db.VarChar(500)
+  imageUrl     String?  @db.VarChar(500)
+  basePrice    Int
+  isAvailable  Boolean  @default(true)
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  category     Category          @relation(fields: [categoryId], references: [id])
+  optionGroups MenuOptionGroup[]
+  orderItems   OrderItem[]
+
+  @@index([categoryId])
+  @@map("menus")
+}
+
+/// 메뉴 옵션 그룹 (e.g. "맛 선택", "사이즈", "토핑 추가")
+model MenuOptionGroup {
+  id           Int     @id @default(autoincrement())
+  menuId       Int
+  name         String  @db.VarChar(50)
+  isRequired   Boolean @default(false)
+  maxSelect    Int     @default(1)
+  displayOrder Int     @default(0)
+
+  menu    Menu         @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  options MenuOption[]
+
+  @@map("menu_option_groups")
+}
+
+/// 개별 옵션 항목 (e.g. "순한맛 +0원", "라지 +1000원")
+model MenuOption {
+  id           Int     @id @default(autoincrement())
+  groupId      Int
+  name         String  @db.VarChar(50)
+  extraPrice   Int     @default(0)
+  isAvailable  Boolean @default(true)
+  displayOrder Int     @default(0)
+
+  group            MenuOptionGroup   @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  orderItemOptions OrderItemOption[]
+
+  @@map("menu_options")
+}
+
+// ============================================
+// 5. 주문 시스템 (Order)
+// ============================================
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  COMPLETED
+  CANCELLED
+}
+
+/// 주문 (테이블 단위)
+model Order {
+  id         Int         @id @default(autoincrement())
+  storeId    Int
+  tableId    Int
+  status     OrderStatus @default(PENDING)
+  totalPrice Int         @default(0)
+  memo       String?     @db.VarChar(500)
+  orderedAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  store Store       @relation(fields: [storeId], references: [id])
+  table Table       @relation(fields: [tableId], references: [id])
+  items OrderItem[]
+
+  @@index([storeId, tableId])
+  @@index([status])
+  @@index([orderedAt])
+  @@map("orders")
+}
+
+/// 주문 항목 (주문 시점 스냅샷)
+model OrderItem {
+  id        Int    @id @default(autoincrement())
+  orderId   Int
+  menuId    Int
+  menuName  String @db.VarChar(100) // 스냅샷
+  basePrice Int                     // 스냅샷
+  quantity  Int    @default(1)
+  subTotal  Int
+
+  order   Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menu    Menu              @relation(fields: [menuId], references: [id])
+  options OrderItemOption[]
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+/// 주문 항목별 선택 옵션 (스냅샷)
+model OrderItemOption {
+  id          Int    @id @default(autoincrement())
+  orderItemId Int
+  optionId    Int
+  optionName  String @db.VarChar(50) // 스냅샷
+  extraPrice  Int                    // 스냅샷
+
+  orderItem OrderItem  @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  option    MenuOption @relation(fields: [optionId], references: [id])
+
+  @@index([orderItemId])
+  @@map("order_item_options")
+}
