@@ -8,8 +8,7 @@ interface Props {
 }
 
 /**
- * 장바구니 플로팅 바 (주문 페이지 하단 고정)
- * 아이템이 있을 때만 표시
+ * 장바구니 플로팅 바 - 레드버튼 스타일
  */
 export default function CartBar({ onOpenCart }: Props) {
   const { totalCount, totalPrice } = useCart();
@@ -17,18 +16,18 @@ export default function CartBar({ onOpenCart }: Props) {
   if (totalCount === 0) return null;
 
   return (
-    <div className="border-t border-border-default bg-bg-secondary px-6 py-3 animate-bar">
+    <div className="border-t border-border-default bg-bg-secondary/95 backdrop-blur-sm px-6 py-3 animate-bar">
       <button
         onClick={onOpenCart}
-        className="flex w-full items-center justify-between rounded-xl bg-red-primary px-5 py-3.5 transition-colors hover:bg-red-hover touch-feedback"
+        className="rb-btn-primary flex w-full items-center justify-between px-5 py-3.5 touch-feedback"
       >
-        <div className="flex items-center gap-2">
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-xs font-bold text-white">
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/20 text-xs font-bold text-white">
             {totalCount}
           </span>
-          <span className="text-sm font-medium text-white">장바구니 보기</span>
+          <span className="text-sm font-semibold text-white">장바구니 보기</span>
         </div>
-        <span className="text-base font-bold text-white">
+        <span className="text-base font-extrabold text-white">
           {formatPrice(totalPrice)}
         </span>
       </button>

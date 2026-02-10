@@ -1,45 +1,61 @@
 @import "tailwindcss";
 
 /* ============================================
-   레드버튼 태블릿 앱 - 전역 스타일
-   다크 테마 기반 (보드게임 카페 분위기)
+   🔴 레드버튼(RedButton) 태블릿 앱 - 디자인 시스템
+   브랜드 가이드 기반 다크 테마
    ============================================ */
 
 :root {
-  /* 브랜드 컬러 */
-  --red-primary: #E53E3E;
-  --red-hover: #C53030;
-  --red-light: #FEB2B2;
+  /* 브랜드 컬러 (공식 홈페이지 기준) */
+  --red-primary: #E5244D;
+  --red-hover: #CC1F44;
+  --red-light: #FF6B81;
+  --red-glow: rgba(229, 36, 77, 0.15);
+  --red-subtle: rgba(229, 36, 77, 0.08);
 
-  /* 다크 테마 */
-  --bg-primary: #0F0F0F;
-  --bg-secondary: #1A1A1A;
-  --bg-card: #242424;
-  --bg-card-hover: #2D2D2D;
+  /* 다크 테마 - 따뜻한 톤 (순수 흑색 X → 매장 분위기) */
+  --bg-primary: #111015;
+  --bg-secondary: #1A191F;
+  --bg-card: #23222A;
+  --bg-card-hover: #2C2B34;
+  --bg-elevated: #2F2E38;
 
-  /* 텍스트 */
-  --text-primary: #F5F5F5;
-  --text-secondary: #A3A3A3;
-  --text-muted: #737373;
+  /* 텍스트 (따뜻한 화이트) */
+  --text-primary: #F2F0F5;
+  --text-secondary: #A8A4B2;
+  --text-muted: #6E6A7A;
 
   /* 보더 */
-  --border-default: #2D2D2D;
-  --border-active: #E53E3E;
+  --border-default: #2F2D38;
+  --border-hover: #3D3B48;
+  --border-active: #E5244D;
+
+  /* 의미론적 컬러 */
+  --green-badge: #34D399;
+  --yellow-badge: #FBBF24;
+  --orange-badge: #FB923C;
 }
 
 @theme inline {
   --color-red-primary: var(--red-primary);
   --color-red-hover: var(--red-hover);
   --color-red-light: var(--red-light);
+  --color-red-glow: var(--red-glow);
+  --color-red-subtle: var(--red-subtle);
   --color-bg-primary: var(--bg-primary);
   --color-bg-secondary: var(--bg-secondary);
   --color-bg-card: var(--bg-card);
   --color-bg-card-hover: var(--bg-card-hover);
+  --color-bg-elevated: var(--bg-elevated);
   --color-text-primary: var(--text-primary);
   --color-text-secondary: var(--text-secondary);
   --color-text-muted: var(--text-muted);
   --color-border-default: var(--border-default);
+  --color-border-hover: var(--border-hover);
   --color-border-active: var(--border-active);
+  --color-green-badge: var(--green-badge);
+  --color-yellow-badge: var(--yellow-badge);
+  --color-orange-badge: var(--orange-badge);
 }
 
 * {
@@ -54,10 +70,13 @@ html {
 body {
   background: var(--bg-primary);
   color: var(--text-primary);
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui,
+    'Noto Sans KR', sans-serif;
   overflow: hidden;
   height: 100dvh;
   width: 100dvw;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* ============================================
@@ -70,27 +89,154 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
-
 .scroll-smooth-x {
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
 }
 
+/* 커스텀 스크롤바 (패널용) */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 4px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 4px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: var(--border-hover);
+}
+
+/* ============================================
+   포커스 스타일
+   ============================================ */
+:focus-visible {
+  outline: 2px solid var(--red-primary);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* ============================================
+   카드 공통 스타일
+   ============================================ */
+.rb-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: 16px;
+  transition: all 0.2s ease;
+}
+.rb-card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-hover);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+}
+
+/* 레드 글로우 효과 (hover시) */
+.rb-card-glow:hover {
+  border-color: rgba(229, 36, 77, 0.3);
+  box-shadow: 0 4px 24px rgba(229, 36, 77, 0.08);
+}
+
+/* ============================================
+   버튼 공통 스타일
+   ============================================ */
+.rb-btn-primary {
+  background: var(--red-primary);
+  color: #fff;
+  font-weight: 700;
+  border-radius: 14px;
+  transition: all 0.2s ease;
+}
+.rb-btn-primary:hover {
+  background: var(--red-hover);
+  box-shadow: 0 4px 16px rgba(229, 36, 77, 0.25);
+}
+.rb-btn-primary:active {
+  transform: scale(0.97);
+}
+
+/* 필(pill) 탭 */
+.rb-tab {
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  font-weight: 500;
+  border-radius: 999px;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+.rb-tab:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+}
+.rb-tab-active {
+  background: var(--red-primary) !important;
+  color: #fff !important;
+  border-color: transparent !important;
+  box-shadow: 0 2px 12px rgba(229, 36, 77, 0.3);
+}
+
+/* ============================================
+   뱃지
+   ============================================ */
+.rb-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.rb-badge-easy {
+  background: rgba(52, 211, 153, 0.12);
+  color: #34D399;
+}
+.rb-badge-medium {
+  background: rgba(251, 191, 36, 0.12);
+  color: #FBBF24;
+}
+.rb-badge-hard {
+  background: rgba(251, 146, 60, 0.12);
+  color: #FB923C;
+}
+.rb-badge-expert {
+  background: rgba(229, 36, 77, 0.12);
+  color: #E5244D;
+}
+
+/* ============================================
+   입력 필드
+   ============================================ */
+.rb-input {
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: 14px;
+  color: var(--text-primary);
+  transition: all 0.2s ease;
+}
+.rb-input:focus {
+  border-color: var(--red-primary);
+  box-shadow: 0 0 0 3px rgba(229, 36, 77, 0.1);
+  outline: none;
+}
+.rb-input::placeholder {
+  color: var(--text-muted);
+}
+
 /* ============================================
    애니메이션
    ============================================ */
-
-/* 모달 백드롭 페이드인 */
 @keyframes backdrop-in {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
-/* 모달 슬라이드업 */
 @keyframes modal-slide-up {
   from {
     opacity: 0;
-    transform: translateY(20px) scale(0.98);
+    transform: translateY(24px) scale(0.96);
   }
   to {
     opacity: 1;
@@ -98,13 +244,11 @@ body {
   }
 }
 
-/* 패널 슬라이드 (우측에서) */
 @keyframes panel-slide-in {
   from { transform: translateX(100%); }
   to { transform: translateX(0); }
 }
 
-/* 장바구니 바 슬라이드업 */
 @keyframes bar-slide-up {
   from {
     opacity: 0;
@@ -116,11 +260,10 @@ body {
   }
 }
 
-/* 카드 등장 */
 @keyframes fade-in-up {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
@@ -128,24 +271,45 @@ body {
   }
 }
 
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(229, 36, 77, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(229, 36, 77, 0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
 .animate-backdrop {
   animation: backdrop-in 0.2s ease-out;
 }
-
 .animate-modal {
-  animation: modal-slide-up 0.25s ease-out;
+  animation: modal-slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
-
 .animate-panel {
-  animation: panel-slide-in 0.3s ease-out;
+  animation: panel-slide-in 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
-
 .animate-bar {
   animation: bar-slide-up 0.3s ease-out;
 }
-
 .animate-card {
-  animation: fade-in-up 0.3s ease-out both;
+  animation: fade-in-up 0.4s ease-out both;
+}
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* 스켈레톤 시머 */
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--bg-card) 25%,
+    var(--bg-card-hover) 50%,
+    var(--bg-card) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
 }
 
 /* ============================================
@@ -156,4 +320,12 @@ body {
 }
 .touch-feedback:active {
   transform: scale(0.97);
+}
+
+/* ============================================
+   셀렉션 컬러
+   ============================================ */
+::selection {
+  background: rgba(229, 36, 77, 0.3);
+  color: var(--text-primary);
 }
