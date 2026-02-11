@@ -58,6 +58,9 @@ export default function Navigation() {
   const pathname = usePathname();
   const { totalCount } = useCart();
 
+  // 관리자 페이지에서는 사이드바 숨김
+  if (pathname.startsWith("/admin")) return null;
+
   return (
     <nav className="flex w-[80px] flex-col items-center justify-between border-r border-border-default bg-bg-secondary py-6">
       {/* 상단: 레드버튼 로고 */}

@@ -28,11 +28,11 @@ export const ORDER_STATUS_LABEL: Record<string, string> = {
 };
 
 export const ORDER_STATUS_COLOR: Record<string, string> = {
-  PENDING: "bg-yellow-600/20 text-yellow-400",
-  CONFIRMED: "bg-blue-600/20 text-blue-400",
-  PREPARING: "bg-purple-600/20 text-purple-400",
-  COMPLETED: "bg-green-600/20 text-green-400",
-  CANCELLED: "bg-red-600/20 text-red-400",
+  PENDING: "bg-yellow-badge/12 text-yellow-badge",
+  CONFIRMED: "bg-blue-500/12 text-blue-400",
+  PREPARING: "bg-purple-500/12 text-purple-400",
+  COMPLETED: "bg-green-badge/12 text-green-badge",
+  CANCELLED: "bg-red-primary/12 text-red-primary",
 };
 
 export const MOCK_ORDERS: OrderHistory[] = [
