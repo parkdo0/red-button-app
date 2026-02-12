@@ -11,7 +11,8 @@ interface Props {
 }
 
 /**
- * 메뉴 옵션 선택 모달 - 레드버튼 스타일
+ * 메뉴 옵션 선택 모달 - 라이트 테마 (실제 레드버튼 앱 기준)
+ * 주문 페이지가 흰색 배경이므로 모달도 라이트
  */
 export default function OptionModal({ menu, onClose }: Props) {
   const { addItem } = useCart();
@@ -47,8 +48,12 @@ export default function OptionModal({ menu, onClose }: Props) {
     });
   }, []);
 
-  const isValid = menu.optionGroups.filter((g) => g.isRequired).every((g) => (selected.get(g.id)?.size ?? 0) > 0);
+  /** 필수 옵션 모두 선택했는지 검증 */
+  const isValid = menu.optionGroups
+    .filter((g) => g.isRequired)
+    .every((g) => (selected.get(g.id)?.size ?? 0) > 0);
 
+  /** 선택된 옵션 추가 금액 합산 */
   const optionExtra = Array.from(selected.values())
     .flatMap((set) => Array.from(set))
     .reduce((sum, optId) => {
@@ -72,30 +77,50 @@ export default function OptionModal({ menu, onClose }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-[2px] animate-backdrop" onClick={onClose}>
-      <div className="w-full max-w-md rounded-3xl bg-bg-secondary border border-border-default p-6 shadow-2xl animate-modal" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-[2px]"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* 헤더 */}
         <div className="mb-5 flex items-start justify-between">
           <div>
-            <h2 className="text-lg font-extrabold text-text-primary">{menu.name}</h2>
-            {menu.description && <p className="mt-1 text-sm text-text-muted">{menu.description}</p>}
-            <p className="mt-1 text-base font-bold text-red-primary">{formatPrice(menu.basePrice)}</p>
+            <h2 className="text-lg font-extrabold text-gray-900">{menu.name}</h2>
+            {menu.description && (
+              <p className="mt-1 text-sm text-gray-500">{menu.description}</p>
+            )}
+            <p className="mt-1 text-base font-bold text-red-600">
+              {formatPrice(menu.basePrice)}
+            </p>
           </div>
-          <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-xl text-text-muted hover:bg-bg-card hover:text-text-primary transition-colors touch-feedback">
+          <button
+            onClick={onClose}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+          >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
           </button>
         </div>
 
         {/* 옵션 그룹 */}
-        <div className="flex max-h-60 flex-col gap-5 overflow-y-auto scrollbar-thin">
+        <div className="flex max-h-60 flex-col gap-5 overflow-y-auto">
           {menu.optionGroups.map((group) => (
             <div key={group.id}>
               <div className="mb-2.5 flex items-center gap-2">
-                <span className="text-sm font-bold text-text-primary">{group.name}</span>
-                {group.isRequired && <span className="rb-badge bg-red-subtle text-red-primary">필수</span>}
-                {group.maxSelect > 1 && <span className="text-[10px] text-text-muted">(최대 {group.maxSelect}개)</span>}
+                <span className="text-sm font-bold text-gray-900">{group.name}</span>
+                {group.isRequired && (
+                  <span className="rounded bg-red-50 px-1.5 py-0.5 text-[10px] font-bold text-red-600 border border-red-200">
+                    필수
+                  </span>
+                )}
+                {group.maxSelect > 1 && (
+                  <span className="text-[10px] text-gray-400">(최대 {group.maxSelect}개)</span>
+                )}
               </div>
               <div className="flex flex-col gap-2">
                 {group.options.map((opt) => {
@@ -105,20 +130,32 @@ export default function OptionModal({ menu, onClose }: Props) {
                       key={opt.id}
                       disabled={!opt.isAvailable}
                       onClick={() => toggleOption(group, opt.id)}
-                      className={`flex items-center justify-between rounded-2xl border px-4 py-3 text-sm transition-all duration-200 touch-feedback
-                        ${isSelected ? "border-red-primary bg-red-subtle text-text-primary" : "border-border-default bg-bg-card text-text-secondary hover:border-border-hover"}
+                      className={`flex items-center justify-between rounded-xl border px-4 py-3 text-sm transition-all
+                        ${isSelected
+                          ? "border-red-500 bg-red-50 text-gray-900"
+                          : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+                        }
                         ${!opt.isAvailable ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
                     >
                       <div className="flex items-center gap-2.5">
-                        <div className={`flex h-5 w-5 items-center justify-center rounded-full border-2 transition-colors
-                          ${isSelected ? "border-red-primary bg-red-primary" : "border-text-muted"}`}>
+                        {/* 라디오/체크 표시 */}
+                        <div
+                          className={`flex h-5 w-5 items-center justify-center rounded-full border-2 transition-colors
+                            ${isSelected ? "border-red-600 bg-red-600" : "border-gray-300"}`}
+                        >
                           {isSelected && (
-                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5"><polyline points="20 6 9 17 4 12" /></svg>
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5">
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
                           )}
                         </div>
                         <span className="font-medium">{opt.name}</span>
                       </div>
-                      {opt.extraPrice > 0 && <span className="text-xs font-medium text-text-muted">+{formatPrice(opt.extraPrice)}</span>}
+                      {opt.extraPrice > 0 && (
+                        <span className="text-xs font-medium text-gray-400">
+                          +{formatPrice(opt.extraPrice)}
+                        </span>
+                      )}
                     </button>
                   );
                 })}
@@ -128,12 +165,24 @@ export default function OptionModal({ menu, onClose }: Props) {
         </div>
 
         {/* 수량 */}
-        <div className="mt-5 flex items-center justify-between rounded-2xl bg-bg-card border border-border-default px-5 py-3">
-          <span className="text-sm font-semibold text-text-secondary">수량</span>
+        <div className="mt-5 flex items-center justify-between rounded-xl bg-gray-50 border border-gray-200 px-5 py-3">
+          <span className="text-sm font-semibold text-gray-600">수량</span>
           <div className="flex items-center gap-3">
-            <button onClick={() => setQuantity((q) => Math.max(1, q - 1))} className="flex h-9 w-9 items-center justify-center rounded-xl border border-border-default text-text-secondary hover:bg-bg-card-hover transition-colors touch-feedback">−</button>
-            <span className="w-6 text-center text-base font-bold text-text-primary">{quantity}</span>
-            <button onClick={() => setQuantity((q) => Math.min(99, q + 1))} className="flex h-9 w-9 items-center justify-center rounded-xl border border-border-default text-text-secondary hover:bg-bg-card-hover transition-colors touch-feedback">+</button>
+            <button
+              onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 text-gray-500 hover:bg-gray-100 transition-colors"
+            >
+              −
+            </button>
+            <span className="w-6 text-center text-base font-bold text-gray-900">
+              {quantity}
+            </span>
+            <button
+              onClick={() => setQuantity((q) => Math.min(99, q + 1))}
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 text-gray-500 hover:bg-gray-100 transition-colors"
+            >
+              +
+            </button>
           </div>
         </div>
 
@@ -141,8 +190,11 @@ export default function OptionModal({ menu, onClose }: Props) {
         <button
           onClick={handleAdd}
           disabled={!isValid}
-          className={`mt-4 w-full rounded-2xl py-3.5 text-base font-bold transition-all touch-feedback
-            ${isValid ? "rb-btn-primary" : "bg-bg-card text-text-muted cursor-not-allowed"}`}
+          className={`mt-4 w-full rounded-xl py-3.5 text-base font-bold transition-all
+            ${isValid
+              ? "bg-red-600 text-white hover:bg-red-700 active:scale-[0.98]"
+              : "bg-gray-100 text-gray-400 cursor-not-allowed"
+            }`}
         >
           {formatPrice(itemTotal)} 담기
         </button>
