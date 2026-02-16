@@ -1,7 +1,7 @@
 // ============================================
-// 레드버튼(RedButton) 태블릿 앱 클론 - DB 스키마
+// 레드버튼(RedButton) 태블릿 앱 클론 - DB 스키마 v3
 // Stack: Prisma 7 + MySQL 8
-// 실제 앱 스크린샷 기준으로 설계 (2026.02)
+// 본사(HQ) + 매장(Store) 2계층 관리 구조
 // ============================================
 
 generator client {
@@ -10,28 +10,61 @@ generator client {
 
 datasource db {
   provider = "mysql"
-  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// 0. 관리자 계정 (Admin User)
+// ============================================
+
+enum AdminRole {
+  HQ_ADMIN      // 본사 관리자 (전체 권한)
+  STORE_MANAGER // 매장 점장 (매장 전체 권한)
+  STORE_STAFF   // 매장 직원 (주문/채팅만)
+}
+
+/// 관리자 계정
+model AdminUser {
+  id        Int       @id @default(autoincrement())
+  email     String    @unique @db.VarChar(100)
+  password  String    @db.VarChar(255) // bcrypt 해시
+  name      String    @db.VarChar(50)
+  role      AdminRole @default(STORE_STAFF)
+  storeId   Int?      // null = 본사, 값 있으면 해당 매장 소속
+  isActive  Boolean   @default(true)
+  lastLogin DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  store Store? @relation(fields: [storeId], references: [id])
+
+  @@index([storeId])
+  @@map("admin_users")
 }
 
 // ============================================
 // 1. 매장 / 테이블 (Store & Table)
 // ============================================
 
-/// 매장 정보 (멀티 매장 대응 - 프랜차이즈)
+/// 매장 정보 (프랜차이즈 멀티 매장)
 model Store {
-  id        Int      @id @default(autoincrement())
-  name      String   @db.VarChar(100) // "수원점"
-  address   String?  @db.VarChar(255)
-  phone     String?  @db.VarChar(20)
-  wifiId    String?  @db.VarChar(50) // "redbutton"
-  wifiPw    String?  @db.VarChar(50) // "red2563799"
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           Int      @id @default(autoincrement())
+  name         String   @db.VarChar(100) // "수원점"
+  address      String?  @db.VarChar(255)
+  phone        String?  @db.VarChar(20)
+  wifiId       String?  @db.VarChar(50)  // "redbutton"
+  wifiPw       String?  @db.VarChar(50)  // "red2563799"
+  openTime     String?  @db.VarChar(10)  // "10:00"
+  closeTime    String?  @db.VarChar(10)  // "23:00"
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  tables   Table[]
-  orders   Order[]
-  sessions TableSession[]
+  tables     Table[]
+  orders     Order[]
+  sessions   TableSession[]
+  admins     AdminUser[]
+  storeGames StoreGame[]
+  storeMenus StoreMenu[]
 
   @@map("stores")
 }
@@ -40,7 +73,7 @@ model Store {
 model Table {
   id       Int     @id @default(autoincrement())
   storeId  Int
-  tableNo  String  @db.VarChar(10) // "31"
+  tableNo  String  @db.VarChar(10)
   seats    Int     @default(4)
   isActive Boolean @default(true)
 
@@ -52,14 +85,14 @@ model Table {
   @@map("tables")
 }
 
-/// 테이블 이용 세션 (입장~퇴장, 이용 시간 추적)
+/// 테이블 이용 세션 (입장~퇴장)
 model TableSession {
-  id          Int       @id @default(autoincrement())
-  storeId     Int
-  tableId     Int
-  checkInAt   DateTime  @default(now())
-  checkOutAt  DateTime?
-  guestCount  Int       @default(2)
+  id         Int       @id @default(autoincrement())
+  storeId    Int
+  tableId    Int
+  checkInAt  DateTime  @default(now())
+  checkOutAt DateTime?
+  guestCount Int       @default(2)
 
   store Store @relation(fields: [storeId], references: [id])
   table Table @relation(fields: [tableId], references: [id])
@@ -69,19 +102,18 @@ model TableSession {
 }
 
 // ============================================
-// 2. 카테고리 (게임 장르 & F&B 탭 통합)
+// 2. 카테고리 (F&B 탭 구분용)
 // ============================================
 
 enum CategoryType {
-  GAME // 게임 장르용 (현재 미사용 - Tag로 대체)
-  FOOD // F&B 탭 메뉴: 푸드, 음료, 벌칙메뉴, MD상품
+  FOOD // F&B 탭: 푸드, 음료, 벌칙메뉴, MD상품
 }
 
-/// 카테고리 (주로 F&B 탭 구분용)
+/// F&B 카테고리
 model Category {
   id           Int          @id @default(autoincrement())
-  type         CategoryType
-  name         String       @db.VarChar(50) // "푸드", "음료", "벌칙메뉴", "MD상품"
+  type         CategoryType @default(FOOD)
+  name         String       @db.VarChar(50)
   displayOrder Int          @default(0)
   isActive     Boolean      @default(true)
   createdAt    DateTime     @default(now())
@@ -93,10 +125,9 @@ model Category {
 }
 
 // ============================================
-// 3. 보드게임 (Game) + 태그 M:N 필터링
+// 3. 보드게임 (Game) - 본사 마스터 데이터
 // ============================================
 
-/// 난이도 6단계 (실제 앱 기준)
 enum Difficulty {
   VERY_EASY
   EASY
@@ -106,39 +137,39 @@ enum Difficulty {
   EXTREME
 }
 
-/// 보드게임
+/// 보드게임 마스터 (본사에서 관리)
 model Game {
   id                 Int        @id @default(autoincrement())
   title              String     @db.VarChar(100)
   description        String?    @db.Text
   thumbnailUrl       String?    @db.VarChar(500)
-  videoUrl           String?    @db.VarChar(500) // 유튜브 룰 설명 영상
+  videoUrl           String?    @db.VarChar(500)
   minPlayers         Int        @default(2)
   maxPlayers         Int        @default(4)
-  recommendedPlayers String     @db.VarChar(20) // "3-5인" (추천 인원 텍스트)
-  playTime           Int? // 분 단위
-  playTimeCategory   String     @db.VarChar(20) // "15-30분" (필터용)
+  recommendedPlayers String     @db.VarChar(20)  // "3-5인"
+  playTime           Int?                         // 분 단위
+  playTimeCategory   String     @db.VarChar(20)  // "15-30분"
   difficulty         Difficulty @default(NORMAL)
-  shelfLocation      String     @db.VarChar(20) // 진열 위치 "ㄱㄴㄷ-6"
-  isActive           Boolean    @default(true)
+  defaultShelfLoc    String     @db.VarChar(20)  // 기본 진열 위치 (매장에서 오버라이드 가능)
+  isActive           Boolean    @default(true)   // 본사 레벨 활성화
   createdAt          DateTime   @default(now())
   updatedAt          DateTime   @updatedAt
 
-  tags     GameTag[]
-  hashtags GameHashtag[]
+  tags       GameTag[]
+  hashtags   GameHashtag[]
+  storeGames StoreGame[]
 
   @@index([difficulty])
   @@index([playTimeCategory])
-  @@fulltext([title]) // 초성 검색은 앱 레벨에서 처리, DB는 FULLTEXT 보조
+  @@fulltext([title])
   @@map("games")
 }
 
-/// 태그 (필터링 기준 - 실제 앱의 3가지 필터 축)
-/// group: "genre" | "player_count" | "play_time"
+/// 태그 (필터링 기준)
 model Tag {
   id           Int    @id @default(autoincrement())
-  group        String @db.VarChar(30)
-  value        String @db.VarChar(50)
+  group        String @db.VarChar(30) // "genre" | "player_count"
+  value        String @db.VarChar(50) // "전략", "2인"
   displayOrder Int    @default(0)
 
   games GameTag[]
@@ -147,7 +178,7 @@ model Tag {
   @@map("tags")
 }
 
-/// Game ↔ Tag M:N 중간 테이블
+/// Game ↔ Tag M:N
 model GameTag {
   gameId Int
   tagId  Int
@@ -159,12 +190,11 @@ model GameTag {
   @@map("game_tags")
 }
 
-/// 게임 해시태그 (실제 앱에서 빨간 글씨로 표시되는 태그)
-/// e.g. "#내 것도 내 거", "#네 것도 내 거"
+/// 게임 해시태그 (빨간 글씨)
 model GameHashtag {
   id     Int    @id @default(autoincrement())
   gameId Int
-  text   String @db.VarChar(50) // "내 것도 내 거" (# 제외)
+  text   String @db.VarChar(50)
   order  Int    @default(0)
 
   game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
@@ -173,14 +203,36 @@ model GameHashtag {
   @@map("game_hashtags")
 }
 
-/// 추천 카테고리 (홈 화면 가로 스크롤 Row)
-/// 실제 앱처럼 감성적 제목 + 이모지
+// ============================================
+// 3-1. 매장별 게임 보유 현황 (Store ↔ Game)
+// ============================================
+
+/// 매장별 게임 보유 & 노출 설정
+/// 본사 Game 마스터에서 "우리 매장에 있는 게임"을 체크
+model StoreGame {
+  storeId       Int
+  gameId        Int
+  isVisible     Boolean @default(true)  // 태블릿 노출 여부
+  shelfLocation String? @db.VarChar(20) // 매장별 진열 위치 오버라이드 (null이면 Game.defaultShelfLoc)
+  createdAt     DateTime @default(now())
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  game  Game  @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@id([storeId, gameId])
+  @@map("store_games")
+}
+
+// ============================================
+// 3-2. 추천 카테고리 (홈 화면 Row)
+// ============================================
+
 model RecommendCategory {
-  id       Int    @id @default(autoincrement())
-  title    String @db.VarChar(100) // "입문자를 위해 엄선한\n재미보장 보드게임"
-  subtitle String @db.VarChar(200) // 부제목
-  emoji    String @db.VarChar(10)  // "🎲"
-  order    Int    @default(0)
+  id       Int     @id @default(autoincrement())
+  title    String  @db.VarChar(100)
+  subtitle String  @db.VarChar(200)
+  emoji    String  @db.VarChar(10)
+  order    Int     @default(0)
   isActive Boolean @default(true)
 
   items RecommendCategoryItem[]
@@ -188,7 +240,6 @@ model RecommendCategory {
   @@map("recommend_categories")
 }
 
-/// 추천 카테고리 ↔ 게임 연결
 model RecommendCategoryItem {
   categoryId Int
   gameId     Int
@@ -201,20 +252,20 @@ model RecommendCategoryItem {
 }
 
 // ============================================
-// 4. F&B 메뉴 (Menu) + 옵션 그룹핑
+// 4. F&B 메뉴 - 본사 마스터 데이터
 // ============================================
 
-/// F&B 메뉴 아이템
+/// F&B 메뉴 마스터 (본사에서 관리)
 model Menu {
   id           Int      @id @default(autoincrement())
   categoryId   Int
   name         String   @db.VarChar(100)
   description  String?  @db.VarChar(500)
   imageUrl     String?  @db.VarChar(500)
-  basePrice    Int      // 원 단위
-  isAvailable  Boolean  @default(true)
-  isNew        Boolean  @default(false) // NEW 뱃지 표시
-  isBest       Boolean  @default(false) // BEST 뱃지 표시
+  basePrice    Int
+  isNew        Boolean  @default(false)
+  isBest       Boolean  @default(false)
+  isActive     Boolean  @default(true)  // 본사 레벨 활성화
   displayOrder Int      @default(0)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -222,12 +273,13 @@ model Menu {
   category     Category          @relation(fields: [categoryId], references: [id])
   optionGroups MenuOptionGroup[]
   orderItems   OrderItem[]
+  storeMenus   StoreMenu[]
 
   @@index([categoryId])
   @@map("menus")
 }
 
-/// 메뉴 옵션 그룹 (e.g. "맛 선택", "사이즈")
+/// 메뉴 옵션 그룹
 model MenuOptionGroup {
   id           Int     @id @default(autoincrement())
   menuId       Int
@@ -242,7 +294,7 @@ model MenuOptionGroup {
   @@map("menu_option_groups")
 }
 
-/// 개별 옵션 항목 (e.g. "순한맛 +0원", "라지 +1,500원")
+/// 개별 옵션 항목
 model MenuOption {
   id           Int     @id @default(autoincrement())
   groupId      Int
@@ -258,24 +310,44 @@ model MenuOption {
 }
 
 // ============================================
-// 5. 주문 시스템 (Order)
+// 4-1. 매장별 메뉴 설정 (Store ↔ Menu)
+// ============================================
+
+/// 매장별 메뉴 판매 & 가격 설정
+/// 매장에서 품절 토글, 가격 오버라이드 가능
+model StoreMenu {
+  storeId       Int
+  menuId        Int
+  isAvailable   Boolean @default(true)  // 판매중/품절
+  priceOverride Int?                    // null이면 Menu.basePrice 사용
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  menu  Menu  @relation(fields: [menuId], references: [id], onDelete: Cascade)
+
+  @@id([storeId, menuId])
+  @@map("store_menus")
+}
+
+// ============================================
+// 5. 주문 시스템
 // ============================================
 
 enum OrderStatus {
-  PENDING    // 접수 대기
-  CONFIRMED  // 접수 완료
-  PREPARING  // 준비 중 (주문 진행중)
-  COMPLETED  // 완료
-  CANCELLED  // 취소됨
+  PENDING
+  CONFIRMED
+  PREPARING
+  COMPLETED
+  CANCELLED
 }
 
-/// 주문 (테이블 단위, 복수 주문 가능)
 model Order {
   id         Int         @id @default(autoincrement())
   storeId    Int
   tableId    Int
   status     OrderStatus @default(PENDING)
-  totalPrice Int         @default(0) // 원 단위
+  totalPrice Int         @default(0)
   memo       String?     @db.VarChar(500)
   orderedAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
@@ -290,15 +362,14 @@ model Order {
   @@map("orders")
 }
 
-/// 주문 항목 (주문 시점 스냅샷 - 메뉴 가격 변경에 영향 안 받음)
 model OrderItem {
   id        Int    @id @default(autoincrement())
   orderId   Int
   menuId    Int
-  menuName  String @db.VarChar(100) // 스냅샷
-  basePrice Int                     // 스냅샷
+  menuName  String @db.VarChar(100)
+  basePrice Int
   quantity  Int    @default(1)
-  subTotal  Int                     // (basePrice + 옵션합) * quantity
+  subTotal  Int
 
   order   Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
   menu    Menu              @relation(fields: [menuId], references: [id])
@@ -308,13 +379,12 @@ model OrderItem {
   @@map("order_items")
 }
 
-/// 주문 항목별 선택 옵션 (스냅샷)
 model OrderItemOption {
   id          Int    @id @default(autoincrement())
   orderItemId Int
   optionId    Int
-  optionName  String @db.VarChar(50) // 스냅샷
-  extraPrice  Int                    // 스냅샷
+  optionName  String @db.VarChar(50)
+  extraPrice  Int
 
   orderItem OrderItem  @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
   option    MenuOption @relation(fields: [optionId], references: [id])
@@ -328,11 +398,10 @@ model OrderItemOption {
 // ============================================
 
 enum MessageSender {
-  STORE    // 매장 → 고객
-  CUSTOMER // 고객 → 매장
+  STORE
+  CUSTOMER
 }
 
-/// 카운터 쪽지 메시지
 model ChatMessage {
   id        Int           @id @default(autoincrement())
   storeId   Int
@@ -350,18 +419,17 @@ model ChatMessage {
 // 7. 이벤트 배너
 // ============================================
 
-/// 이벤트 (풀스크린 캐러셀)
 model Event {
-  id          Int      @id @default(autoincrement())
-  title       String   @db.VarChar(100)
-  subtitle    String?  @db.VarChar(200)
-  description String?  @db.Text
-  imageUrl    String?  @db.VarChar(500)
-  order       Int      @default(0)
-  isActive    Boolean  @default(true)
+  id          Int       @id @default(autoincrement())
+  title       String    @db.VarChar(100)
+  subtitle    String?   @db.VarChar(200)
+  description String?   @db.Text
+  imageUrl    String?   @db.VarChar(500)
+  order       Int       @default(0)
+  isActive    Boolean   @default(true)
   startDate   DateTime?
   endDate     DateTime?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
 
   @@map("events")
 }
