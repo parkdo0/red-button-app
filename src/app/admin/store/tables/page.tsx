@@ -1,50 +1,77 @@
 "use client";
 
-import { useState } from "react";
-import { MOCK_TABLE_STATUS, type TableStatus } from "@/data/mock-admin";
+import { useState, useEffect, useCallback } from "react";
+
+interface TableStatus {
+  id: number;
+  tableNo: string;
+  seats: number;
+  status: "occupied" | "empty";
+  guestCount: number;
+  elapsedMinutes: number;
+  sessionId: number | null;
+  checkInAt: string | null;
+}
 
 /**
  * 매장 > 테이블 현황 관리
- * 그리드 뷰로 전체 테이블 상태 표시 + 세션 관리
  */
 export default function StoreTablesPage() {
-  const [tables, setTables] = useState<TableStatus[]>(MOCK_TABLE_STATUS);
+  const [tables, setTables] = useState<TableStatus[]>([]);
   const [selectedTable, setSelectedTable] = useState<TableStatus | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchTables = useCallback(() => {
+    fetch("/api/tables?storeId=1")
+      .then((r) => r.json())
+      .then((data) => { setTables(Array.isArray(data) ? data : []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  useEffect(() => { fetchTables(); }, [fetchTables]);
 
   const occupied = tables.filter((t) => t.status === "occupied").length;
   const totalGuests = tables.reduce((sum, t) => sum + (t.guestCount ?? 0), 0);
 
   /** 입장 처리 */
-  const checkIn = (tableId: number, guestCount: number) => {
-    setTables((prev) =>
-      prev.map((t) =>
-        t.id === tableId
-          ? { ...t, status: "occupied" as const, guestCount, checkInAt: new Date().toISOString(), elapsedMinutes: 0 }
-          : t
-      )
-    );
-    setSelectedTable(null);
+  const checkIn = async (tableId: number, guestCount: number) => {
+    try {
+      await fetch("/api/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ storeId: 1, tableId, guestCount }),
+      });
+      setSelectedTable(null);
+      fetchTables();
+    } catch (err) {
+      console.error("입장 처리 실패:", err);
+    }
   };
 
   /** 퇴장 처리 */
-  const checkOut = (tableId: number) => {
-    setTables((prev) =>
-      prev.map((t) =>
-        t.id === tableId
-          ? { ...t, status: "empty" as const, guestCount: null, checkInAt: null, elapsedMinutes: null }
-          : t
-      )
-    );
-    setSelectedTable(null);
+  const checkOut = async (table: TableStatus) => {
+    if (!table.sessionId) return;
+    try {
+      await fetch(`/api/sessions/${table.sessionId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "checkout" }),
+      });
+      setSelectedTable(null);
+      fetchTables();
+    } catch (err) {
+      console.error("퇴장 처리 실패:", err);
+    }
   };
 
-  /** 시간 포맷 */
-  const formatTime = (mins: number | null) => {
-    if (mins === null) return "";
+  const formatTime = (mins: number | null | undefined) => {
+    if (mins == null || mins === 0) return "";
     const h = Math.floor(mins / 60);
     const m = mins % 60;
     return h > 0 ? `${h}시간 ${m}분` : `${m}분`;
   };
+
+  if (loading) return <div className="flex h-full items-center justify-center text-gray-400">로딩 중...</div>;
 
   return (
     <div className="flex h-full flex-col">
@@ -116,8 +143,8 @@ function TableModal({ table, onClose, onCheckIn, onCheckOut, formatTime }: {
   table: TableStatus;
   onClose: () => void;
   onCheckIn: (id: number, guests: number) => void;
-  onCheckOut: (id: number) => void;
-  formatTime: (m: number | null) => string;
+  onCheckOut: (table: TableStatus) => void;
+  formatTime: (m: number | null | undefined) => string;
 }) {
   const [guestInput, setGuestInput] = useState(2);
 
@@ -153,7 +180,7 @@ function TableModal({ table, onClose, onCheckIn, onCheckOut, formatTime }: {
               </div>
             </div>
             <button
-              onClick={() => onCheckOut(table.id)}
+              onClick={() => onCheckOut(table)}
               className="w-full rounded-xl bg-gray-900 py-3 text-sm font-bold text-white hover:bg-gray-800"
             >
               퇴장 처리
@@ -184,9 +211,7 @@ function TableModal({ table, onClose, onCheckIn, onCheckOut, formatTime }: {
           </>
         )}
 
-        <button onClick={onClose} className="mt-2 w-full py-2 text-xs text-gray-400 hover:text-gray-600">
-          닫기
-        </button>
+        <button onClick={onClose} className="mt-2 w-full py-2 text-xs text-gray-400 hover:text-gray-600">닫기</button>
       </div>
     </div>
   );

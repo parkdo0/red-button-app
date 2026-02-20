@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
           throw new Error(`메뉴 ID ${item.menuId}를 찾을 수 없습니다.`);
         }
 
-        if (!menu.isAvailable) {
+        if (!menu.isActive) {
           throw new Error(`${menu.name}은(는) 현재 품절입니다.`);
         }
 

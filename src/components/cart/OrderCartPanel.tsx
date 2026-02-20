@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCart } from "@/components/cart/CartProvider";
 import { useToast } from "@/components/ToastProvider";
-import { formatPrice } from "@/data/mock";
-import { MOCK_ORDERS, ORDER_STATUS_LABEL, ORDER_STATUS_COLOR } from "@/data/mock-orders";
+import { formatPrice } from "@/data/constants";
+import { ORDER_STATUS_LABEL } from "@/data/order-constants";
 import OrderConfirmModal from "@/components/cart/OrderConfirmModal";
+import { orderApi } from "@/lib/api";
 import type { CreateOrderRequest } from "@/types/api";
 
 type PanelTab = "cart" | "history";
@@ -39,8 +40,7 @@ export default function OrderCartPanel() {
     };
 
     try {
-      console.log("📦 주문 요청:", body);
-      await new Promise((r) => setTimeout(r, 600));
+      await orderApi.create(body);
       showToast(`주문이 접수되었습니다! (${formatPrice(totalPrice)})`);
       clearCart();
       setShowConfirm(false);
@@ -243,8 +243,34 @@ function CartContent({
 // ──────────────────────────────────────
 // 주문 내역 탭 콘텐츠
 // ──────────────────────────────────────
+interface ApiOrder {
+  id: number;
+  status: string;
+  totalPrice: number;
+  orderedAt: string;
+  items: { id: number; menuName: string; quantity: number; subTotal: number; options: { optionName: string }[] }[];
+}
+
 function HistoryContent() {
-  if (MOCK_ORDERS.length === 0) {
+  const [orders, setOrders] = useState<ApiOrder[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/orders?storeId=1&tableId=1")
+      .then((r) => r.json())
+      .then((data) => { setOrders(data); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex h-full items-center justify-center text-gray-400">
+        <p className="text-[13px]">불러오는 중...</p>
+      </div>
+    );
+  }
+
+  if (orders.length === 0) {
     return (
       <div className="flex h-full flex-col items-center justify-center text-gray-400">
         <p className="text-[15px] font-medium">주문 내역이 없습니다</p>
@@ -254,7 +280,7 @@ function HistoryContent() {
 
   return (
     <div className="flex flex-col divide-y divide-gray-100 px-4 py-3">
-      {MOCK_ORDERS.map((order) => {
+      {orders.map((order) => {
         const time = new Date(order.orderedAt);
         const timeStr = `${time.getHours() > 12 ? "오후" : "오전"} ${time.getHours() > 12 ? time.getHours() - 12 : time.getHours()}:${String(time.getMinutes()).padStart(2, "0")}`;
 
@@ -274,8 +300,8 @@ function HistoryContent() {
             </div>
 
             {/* 주문 아이템 목록 */}
-            {order.items.map((item, i) => (
-              <div key={i} className="flex items-center justify-between py-1.5 border-t border-gray-50 first:border-t-0">
+            {order.items.map((item) => (
+              <div key={item.id} className="flex items-center justify-between py-1.5 border-t border-gray-50 first:border-t-0">
                 <div>
                   <span className="text-[13px] font-bold text-gray-900">{item.menuName}</span>
                 </div>

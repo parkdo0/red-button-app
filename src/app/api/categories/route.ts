@@ -11,7 +11,7 @@ export async function GET(request: Request) {
     const type = searchParams.get("type");
 
     const categories = await prisma.category.findMany({
-      where: type ? { type: type as "GAME" | "FOOD" } : {},
+      where: type ? { type: type as any } : {},
       orderBy: { displayOrder: "asc" },
       select: {
         id: true,

@@ -1,6 +1,6 @@
 "use client";
 
-import { FILTER_OPTIONS, DIFFICULTY_LABEL } from "@/data/mock";
+import { FILTER_OPTIONS, DIFFICULTY_LABEL } from "@/data/constants";
 
 export interface FilterState {
   playerCount: Set<string>;
@@ -125,7 +125,7 @@ export default function GameFilterSidebar({ filters, onChange, isOpen, onToggle 
           <FilterGroup
             label={GROUP_LABELS.playerCount}
             icon={GROUP_ICONS.playerCount}
-            options={FILTER_OPTIONS.player_count as unknown as string[]}
+            options={FILTER_OPTIONS.playerCount as unknown as string[]}
             selected={filters.playerCount}
             onToggle={(v) => toggle("playerCount", v)}
           />
@@ -142,7 +142,7 @@ export default function GameFilterSidebar({ filters, onChange, isOpen, onToggle 
             options={FILTER_OPTIONS.difficulty as unknown as string[]}
             selected={filters.difficulty}
             onToggle={(v) => toggle("difficulty", v)}
-            renderLabel={(v) => DIFFICULTY_LABEL[v] ?? v}
+            renderLabel={(v) => DIFFICULTY_LABEL[v as keyof typeof DIFFICULTY_LABEL] ?? v}
           />
         </div>
       </aside>

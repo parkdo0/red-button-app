@@ -1,72 +1,89 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { MOCK_GAMES, DIFFICULTY_LABEL, type Game } from "@/data/mock";
-import { MOCK_STORE_GAMES, type StoreGameEntry } from "@/data/mock-admin";
+import { useState, useEffect, useMemo } from "react";
+import { DIFFICULTY_LABEL, type Difficulty } from "@/data/constants";
+
+interface StoreGameItem {
+  id: number;
+  title: string;
+  description: string;
+  thumbnailUrl: string;
+  minPlayers: number;
+  maxPlayers: number;
+  difficulty: string;
+  defaultShelfLoc: string;
+  isVisible: boolean;
+  shelfLocation: string;
+  hasStoreConfig: boolean;
+}
 
 /**
  * 매장 > 게임 노출 관리
- * 본사 마스터 게임 목록에서 "우리 매장에 있는 게임" 토글
- * + 진열 위치 오버라이드 + 태블릿 노출 on/off
  */
 export default function StoreGamesPage() {
+  const [games, setGames] = useState<StoreGameItem[]>([]);
   const [search, setSearch] = useState("");
   const [filterMode, setFilterMode] = useState<"all" | "owned" | "unowned">("all");
-  const [storeGames, setStoreGames] = useState<StoreGameEntry[]>(MOCK_STORE_GAMES);
+  const [loading, setLoading] = useState(true);
 
-  /** 보유 게임 ID Set */
-  const ownedIds = useMemo(() => new Set(storeGames.map((sg) => sg.gameId)), [storeGames]);
+  const fetchGames = () => {
+    fetch("/api/store-games?storeId=1")
+      .then((r) => r.json())
+      .then((data) => { setGames(Array.isArray(data) ? data : []); setLoading(false); })
+      .catch(() => setLoading(false));
+  };
 
-  /** 필터링된 게임 리스트 */
+  useEffect(() => { fetchGames(); }, []);
+
   const filtered = useMemo(() => {
-    return MOCK_GAMES.filter((g) => {
+    return games.filter((g) => {
       const matchSearch = !search || g.title.toLowerCase().includes(search.toLowerCase());
-      const isOwned = ownedIds.has(g.id);
       const matchFilter =
         filterMode === "all" ||
-        (filterMode === "owned" && isOwned) ||
-        (filterMode === "unowned" && !isOwned);
+        (filterMode === "owned" && g.hasStoreConfig) ||
+        (filterMode === "unowned" && !g.hasStoreConfig);
       return matchSearch && matchFilter;
     });
-  }, [search, filterMode, ownedIds]);
+  }, [games, search, filterMode]);
 
   /** 보유 토글 */
-  const toggleOwnership = (game: Game) => {
-    if (ownedIds.has(game.id)) {
-      setStoreGames((prev) => prev.filter((sg) => sg.gameId !== game.id));
+  const toggleOwnership = async (game: StoreGameItem) => {
+    if (game.hasStoreConfig) {
+      await fetch(`/api/store-games?storeId=1&gameId=${game.id}`, { method: "DELETE" });
     } else {
-      setStoreGames((prev) => [
-        ...prev,
-        {
-          storeId: 1,
-          gameId: game.id,
-          gameTitle: game.title,
-          isVisible: true,
-          shelfLocation: null,
-          masterShelfLoc: game.shelfLocation,
-        },
-      ]);
+      await fetch("/api/store-games", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ storeId: 1, gameId: game.id, isVisible: true, shelfLocation: "" }),
+      });
     }
+    fetchGames();
   };
 
   /** 노출 토글 */
-  const toggleVisibility = (gameId: number) => {
-    setStoreGames((prev) =>
-      prev.map((sg) => (sg.gameId === gameId ? { ...sg, isVisible: !sg.isVisible } : sg))
-    );
+  const toggleVisibility = async (game: StoreGameItem) => {
+    await fetch("/api/store-games", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ storeId: 1, gameId: game.id, isVisible: !game.isVisible }),
+    });
+    setGames((prev) => prev.map((g) => g.id === game.id ? { ...g, isVisible: !g.isVisible } : g));
   };
 
   /** 진열 위치 변경 */
-  const updateShelfLocation = (gameId: number, loc: string) => {
-    setStoreGames((prev) =>
-      prev.map((sg) =>
-        sg.gameId === gameId ? { ...sg, shelfLocation: loc || null } : sg
-      )
-    );
+  const updateShelfLocation = async (game: StoreGameItem, loc: string) => {
+    setGames((prev) => prev.map((g) => g.id === game.id ? { ...g, shelfLocation: loc } : g));
+    await fetch("/api/store-games", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ storeId: 1, gameId: game.id, shelfLocation: loc }),
+    });
   };
 
-  const ownedCount = storeGames.length;
-  const visibleCount = storeGames.filter((sg) => sg.isVisible).length;
+  const ownedCount = games.filter((g) => g.hasStoreConfig).length;
+  const visibleCount = games.filter((g) => g.hasStoreConfig && g.isVisible).length;
+
+  if (loading) return <div className="flex h-full items-center justify-center text-gray-400">로딩 중...</div>;
 
   return (
     <div className="flex h-full flex-col">
@@ -78,12 +95,11 @@ export default function StoreGamesPage() {
             <p className="text-xs text-gray-500">
               보유 <strong className="text-red-600">{ownedCount}</strong>종
               · 노출 중 <strong className="text-green-600">{visibleCount}</strong>종
-              · 마스터 전체 {MOCK_GAMES.length}종
+              · 마스터 전체 {games.length}종
             </p>
           </div>
         </div>
 
-        {/* 검색 + 필터 */}
         <div className="mt-3 flex items-center gap-3">
           <div className="relative flex-1">
             <svg className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -108,7 +124,7 @@ export default function StoreGamesPage() {
               >
                 {mode === "all" && "전체"}
                 {mode === "owned" && `보유 (${ownedCount})`}
-                {mode === "unowned" && `미보유 (${MOCK_GAMES.length - ownedCount})`}
+                {mode === "unowned" && `미보유 (${games.length - ownedCount})`}
               </button>
             ))}
           </div>
@@ -131,12 +147,9 @@ export default function StoreGamesPage() {
           </thead>
           <tbody className="divide-y divide-gray-100">
             {filtered.map((game) => {
-              const storeGame = storeGames.find((sg) => sg.gameId === game.id);
-              const isOwned = !!storeGame;
-
+              const isOwned = game.hasStoreConfig;
               return (
                 <tr key={game.id} className={`transition-colors ${isOwned ? "bg-white" : "bg-gray-50/50"}`}>
-                  {/* 보유 체크 */}
                   <td className="px-4 py-3">
                     <button
                       onClick={() => toggleOwnership(game)}
@@ -151,52 +164,42 @@ export default function StoreGamesPage() {
                       )}
                     </button>
                   </td>
-                  {/* 게임명 */}
                   <td className="px-4 py-3">
-                    <span className={`text-sm font-medium ${isOwned ? "text-gray-900" : "text-gray-400"}`}>
-                      {game.title}
-                    </span>
+                    <span className={`text-sm font-medium ${isOwned ? "text-gray-900" : "text-gray-400"}`}>{game.title}</span>
                   </td>
-                  {/* 난이도 */}
                   <td className="px-4 py-3">
-                    <span className="text-xs text-gray-500">{DIFFICULTY_LABEL[game.difficulty]}</span>
+                    <span className="text-xs text-gray-500">{DIFFICULTY_LABEL[game.difficulty as Difficulty] ?? game.difficulty}</span>
                   </td>
-                  {/* 인원 */}
                   <td className="px-4 py-3">
                     <span className="text-xs text-gray-500">{game.minPlayers}-{game.maxPlayers}인</span>
                   </td>
-                  {/* 기본 위치 */}
                   <td className="px-4 py-3">
-                    <span className="text-xs text-gray-400">{game.shelfLocation}</span>
+                    <span className="text-xs text-gray-400">{game.defaultShelfLoc}</span>
                   </td>
-                  {/* 매장 위치 오버라이드 */}
                   <td className="px-4 py-3">
                     {isOwned ? (
                       <input
                         type="text"
-                        value={storeGame?.shelfLocation ?? ""}
-                        onChange={(e) => updateShelfLocation(game.id, e.target.value)}
-                        placeholder={game.shelfLocation}
+                        value={game.shelfLocation ?? ""}
+                        onChange={(e) => updateShelfLocation(game, e.target.value)}
+                        placeholder={game.defaultShelfLoc}
                         className="w-full rounded border border-gray-200 bg-gray-50 px-2 py-1 text-xs text-gray-700 focus:border-red-300 focus:outline-none"
                       />
                     ) : (
                       <span className="text-xs text-gray-300">—</span>
                     )}
                   </td>
-                  {/* 노출 토글 */}
                   <td className="px-4 py-3 text-center">
                     {isOwned ? (
                       <button
-                        onClick={() => toggleVisibility(game.id)}
+                        onClick={() => toggleVisibility(game)}
                         className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                          storeGame?.isVisible ? "bg-green-500" : "bg-gray-300"
+                          game.isVisible ? "bg-green-500" : "bg-gray-300"
                         }`}
                       >
                         <span
-                          className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                            storeGame?.isVisible ? "translate-x-4.5" : "translate-x-0.5"
-                          }`}
-                          style={{ transform: storeGame?.isVisible ? "translateX(18px)" : "translateX(2px)" }}
+                          className="inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform"
+                          style={{ transform: game.isVisible ? "translateX(18px)" : "translateX(2px)" }}
                         />
                       </button>
                     ) : (

@@ -7,7 +7,7 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
-import { type MenuItem } from "@/data/mock";
+import { type MenuItem } from "@/data/constants";
 
 // ============================================
 // 장바구니 아이템 타입

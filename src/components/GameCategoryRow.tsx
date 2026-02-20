@@ -1,6 +1,6 @@
 "use client";
 
-import { GameCategory } from "@/data/mock";
+import { GameCategory } from "@/data/constants";
 import GameCard from "@/components/GameCard";
 
 interface Props {

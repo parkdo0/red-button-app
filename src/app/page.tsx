@@ -1,14 +1,18 @@
-"use client";
-
-import { GAME_CATEGORIES } from "@/data/mock";
+import { getRecommendCategories } from "@/lib/queries";
 import GameCategoryRow from "@/components/GameCategoryRow";
+import type { GameCategory } from "@/data/constants";
 
 /**
- * 추천 게임 홈 - 실제 레드버튼 앱 기준
- * 넷플릭스 스타일 카테고리별 가로 스크롤
- * 검색/필터 없음 (→ /search 페이지로 분리)
+ * 추천 게임 홈 - Server Component
+ * DB에서 추천 카테고리 + 게임 목록 조회
  */
-export default function HomePage() {
+
+// 현재 매장 ID (추후 세션/쿠키에서 동적으로)
+const STORE_ID = 1;
+
+export default async function HomePage() {
+  const categories = await getRecommendCategories(STORE_ID);
+
   return (
     <div className="h-full overflow-y-auto scrollbar-thin">
       {/* 상단 안내 배너 */}
@@ -22,10 +26,10 @@ export default function HomePage() {
 
       {/* 카테고리별 추천 게임 행 */}
       <div className="flex flex-col gap-6 px-6 pb-8 md:px-8">
-        {GAME_CATEGORIES.map((category) => (
+        {categories.map((category) => (
           <GameCategoryRow
             key={category.id}
-            category={category}
+            category={category as GameCategory}
           />
         ))}
       </div>

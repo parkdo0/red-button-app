@@ -1,35 +1,78 @@
 "use client";
 
-import { useState } from "react";
-import {
-  MOCK_ADMIN_ORDERS,
-  ADMIN_ORDER_STATUS_LABEL,
-  ADMIN_ORDER_STATUS_COLOR,
-  ORDER_STATUS_FLOW,
-  type AdminOrder,
-} from "@/data/mock-admin";
-import { formatPrice } from "@/data/mock";
+import { useState, useEffect, useCallback } from "react";
+import { formatPrice } from "@/data/constants";
+import { ADMIN_ORDER_STATUS_LABEL, ADMIN_ORDER_STATUS_COLOR, ORDER_STATUS_FLOW } from "@/data/admin-constants";
 
-type OrderStatus = AdminOrder["status"];
+interface OrderItem {
+  menuName: string;
+  quantity: number;
+  subTotal: number;
+  options: string[];
+}
 
-const STATUS_COLUMNS: OrderStatus[] = ["PENDING", "CONFIRMED", "PREPARING", "COMPLETED"];
+interface AdminOrder {
+  id: number;
+  tableNo: string;
+  status: string;
+  totalPrice: number;
+  orderedAt: string;
+  items: OrderItem[];
+}
+
+type OrderStatus = string;
+const STATUS_COLUMNS: string[] = ["PENDING", "CONFIRMED", "PREPARING", "COMPLETED"];
 
 /**
  * 매장 > 주문 관리
  * 칸반 보드 스타일 (상태별 컬럼)
  */
 export default function StoreOrdersPage() {
-  const [orders, setOrders] = useState<AdminOrder[]>(MOCK_ADMIN_ORDERS);
+  const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  /** 주문 상태 변경 */
-  const updateStatus = (orderId: number, newStatus: OrderStatus) => {
-    setOrders((prev) =>
-      prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
-    );
-    // 상세 모달이 열려 있으면 업데이트
-    if (selectedOrder?.id === orderId) {
-      setSelectedOrder((prev) => prev ? { ...prev, status: newStatus } : null);
+  const fetchOrders = useCallback(() => {
+    fetch("/api/orders?storeId=1")
+      .then((r) => r.json())
+      .then((data) => {
+        const mapped = (Array.isArray(data) ? data : []).map((o: Record<string, unknown>) => ({
+          id: o.id as number,
+          tableNo: (o as Record<string, unknown>).tableNo as string ?? ((o as Record<string, Record<string, unknown>>).table?.tableNo as string) ?? "-",
+          status: o.status as string,
+          totalPrice: o.totalPrice as number,
+          orderedAt: o.orderedAt as string,
+          items: ((o.items as Record<string, unknown>[]) ?? []).map((i) => ({
+            menuName: i.menuName as string,
+            quantity: i.quantity as number,
+            subTotal: i.subTotal as number,
+            options: (i.selectedOptions as string[]) ?? [],
+          })),
+        }));
+        setOrders(mapped);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  useEffect(() => { fetchOrders(); }, [fetchOrders]);
+
+  /** 주문 상태 변경 (API 호출) */
+  const updateStatus = async (orderId: number, newStatus: OrderStatus) => {
+    try {
+      await fetch(`/api/orders/${orderId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      setOrders((prev) =>
+        prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
+      );
+      if (selectedOrder?.id === orderId) {
+        setSelectedOrder((prev) => prev ? { ...prev, status: newStatus } : null);
+      }
+    } catch (err) {
+      console.error("주문 상태 변경 실패:", err);
     }
   };
 
@@ -40,6 +83,10 @@ export default function StoreOrdersPage() {
     if (mins < 60) return `${mins}분 전`;
     return `${Math.floor(mins / 60)}시간 ${mins % 60}분 전`;
   };
+
+  if (loading) {
+    return <div className="flex h-full items-center justify-center text-gray-400">로딩 중...</div>;
+  }
 
   return (
     <div className="flex h-full flex-col">
@@ -53,9 +100,10 @@ export default function StoreOrdersPage() {
           <span className="flex items-center gap-1.5 rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-orange-700">
             🔔 신규 {orders.filter((o) => o.status === "PENDING").length}건
           </span>
-          <span className="text-xs text-gray-400">
-            전체 {orders.length}건
-          </span>
+          <button onClick={fetchOrders} className="rounded-lg border border-gray-200 px-3 py-1 text-xs text-gray-500 hover:bg-gray-50">
+            새로고침
+          </button>
+          <span className="text-xs text-gray-400">전체 {orders.length}건</span>
         </div>
       </div>
 
@@ -68,17 +116,15 @@ export default function StoreOrdersPage() {
 
           return (
             <div key={status} className="flex w-[280px] flex-shrink-0 flex-col">
-              {/* 컬럼 헤더 */}
               <div className="mb-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className={`rounded-full border px-2.5 py-0.5 text-xs font-bold ${ADMIN_ORDER_STATUS_COLOR[status]}`}>
-                    {ADMIN_ORDER_STATUS_LABEL[status]}
+                  <span className={`rounded-full border px-2.5 py-0.5 text-xs font-bold ${ADMIN_ORDER_STATUS_COLOR[status] ?? "bg-gray-100 text-gray-500"}`}>
+                    {ADMIN_ORDER_STATUS_LABEL[status] ?? status}
                   </span>
                   <span className="text-xs font-medium text-gray-400">{columnOrders.length}</span>
                 </div>
               </div>
 
-              {/* 주문 카드 리스트 */}
               <div className="flex flex-1 flex-col gap-2 overflow-y-auto">
                 {columnOrders.length === 0 && (
                   <div className="flex flex-1 items-center justify-center rounded-xl border-2 border-dashed border-gray-200 p-6">
@@ -93,7 +139,6 @@ export default function StoreOrdersPage() {
                       status === "PENDING" ? "border-orange-200 shadow-sm" : "border-gray-200"
                     }`}
                   >
-                    {/* 주문 헤더 */}
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-extrabold text-gray-900">#{order.id}</span>
@@ -104,7 +149,6 @@ export default function StoreOrdersPage() {
                       <span className="text-[10px] text-gray-400">{elapsed(order.orderedAt)}</span>
                     </div>
 
-                    {/* 메뉴 목록 */}
                     <div className="mb-3 space-y-1">
                       {order.items.map((item, i) => (
                         <div key={i} className="flex items-center justify-between text-xs">
@@ -119,17 +163,13 @@ export default function StoreOrdersPage() {
                       ))}
                     </div>
 
-                    {/* 합계 + 액션 */}
                     <div className="flex items-center justify-between border-t border-gray-100 pt-2">
                       <span className="text-sm font-bold text-gray-900">{formatPrice(order.totalPrice)}</span>
                       <div className="flex gap-1.5">
-                        {ORDER_STATUS_FLOW[status]?.map((nextStatus) => (
+                        {(ORDER_STATUS_FLOW[status] ?? []).map((nextStatus) => (
                           <button
                             key={nextStatus}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              updateStatus(order.id, nextStatus as OrderStatus);
-                            }}
+                            onClick={(e) => { e.stopPropagation(); updateStatus(order.id, nextStatus); }}
                             className={`rounded-lg px-2.5 py-1 text-[10px] font-bold transition-colors ${
                               nextStatus === "CANCELLED"
                                 ? "bg-gray-100 text-gray-500 hover:bg-gray-200"
@@ -165,7 +205,6 @@ export default function StoreOrdersPage() {
   );
 }
 
-// ── 주문 상세 모달 ──
 function OrderDetailModal({ order, onClose, onStatusChange, elapsed }: {
   order: AdminOrder;
   onClose: () => void;
@@ -177,12 +216,11 @@ function OrderDetailModal({ order, onClose, onStatusChange, elapsed }: {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-        {/* 헤더 */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <span className="text-xl font-extrabold text-gray-900">#{order.id}</span>
-            <span className={`rounded-full border px-2.5 py-0.5 text-xs font-bold ${ADMIN_ORDER_STATUS_COLOR[order.status]}`}>
-              {ADMIN_ORDER_STATUS_LABEL[order.status]}
+            <span className={`rounded-full border px-2.5 py-0.5 text-xs font-bold ${ADMIN_ORDER_STATUS_COLOR[order.status] ?? "bg-gray-100 text-gray-500"}`}>
+              {ADMIN_ORDER_STATUS_LABEL[order.status] ?? order.status}
             </span>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
@@ -192,7 +230,6 @@ function OrderDetailModal({ order, onClose, onStatusChange, elapsed }: {
           </button>
         </div>
 
-        {/* 정보 */}
         <div className="mb-4 grid grid-cols-3 gap-3 rounded-xl bg-gray-50 p-3">
           <div>
             <p className="text-[10px] text-gray-400">테이블</p>
@@ -208,7 +245,6 @@ function OrderDetailModal({ order, onClose, onStatusChange, elapsed }: {
           </div>
         </div>
 
-        {/* 메뉴 상세 */}
         <div className="mb-4 rounded-xl border border-gray-200 divide-y divide-gray-100">
           {order.items.map((item, i) => (
             <div key={i} className="flex items-center justify-between px-4 py-3">
@@ -226,13 +262,12 @@ function OrderDetailModal({ order, onClose, onStatusChange, elapsed }: {
           ))}
         </div>
 
-        {/* 액션 버튼 */}
         {nextStatuses.length > 0 && (
           <div className="flex gap-2">
             {nextStatuses.map((nextStatus) => (
               <button
                 key={nextStatus}
-                onClick={() => { onStatusChange(nextStatus as OrderStatus); onClose(); }}
+                onClick={() => { onStatusChange(nextStatus); onClose(); }}
                 className={`flex-1 rounded-xl py-3 text-sm font-bold transition-colors ${
                   nextStatus === "CANCELLED"
                     ? "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"

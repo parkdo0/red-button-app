@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Game, DIFFICULTY_LABEL } from "@/data/mock";
+import { Game, DIFFICULTY_LABEL } from "@/data/constants";
 
 interface Props {
   game: Game;

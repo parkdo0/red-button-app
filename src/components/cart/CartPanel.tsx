@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useCart } from "@/components/cart/CartProvider";
 import { useToast } from "@/components/ToastProvider";
-import { formatPrice } from "@/data/mock";
+import { formatPrice } from "@/data/constants";
 import type { CreateOrderRequest, OrderResponse } from "@/types/api";
 import OrderConfirmModal from "@/components/cart/OrderConfirmModal";
 

@@ -1,27 +1,66 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import {
-  MOCK_ADMIN_ORDERS,
-  MOCK_TABLE_STATUS,
-  MOCK_STORE_GAMES,
-  ADMIN_ORDER_STATUS_LABEL,
-  ADMIN_ORDER_STATUS_COLOR,
-} from "@/data/mock-admin";
-import { MOCK_MENUS, formatPrice } from "@/data/mock";
+import { formatPrice } from "@/data/constants";
+import { ADMIN_ORDER_STATUS_LABEL, ADMIN_ORDER_STATUS_COLOR } from "@/data/admin-constants";
+
+interface DashboardData {
+  pendingOrders: number;
+  preparingOrders: number;
+  occupiedTables: number;
+  totalTables: number;
+  visibleGames: number;
+  todayRevenue: number;
+  recentOrders: {
+    id: number;
+    tableNo: string;
+    status: string;
+    totalPrice: number;
+    orderedAt: string;
+    items: { menuName: string; quantity: number; subTotal: number }[];
+  }[];
+  tableStatus: {
+    id: number;
+    tableNo: string;
+    seats: number;
+    status: "occupied" | "empty";
+    guestCount: number;
+    elapsedMinutes: number;
+  }[];
+}
 
 /**
  * 매장 대시보드 - 오늘의 운영 현황 한눈에
  */
 export default function StoreDashboardPage() {
-  const pendingOrders = MOCK_ADMIN_ORDERS.filter((o) => o.status === "PENDING").length;
-  const preparingOrders = MOCK_ADMIN_ORDERS.filter((o) => o.status === "PREPARING").length;
-  const occupiedTables = MOCK_TABLE_STATUS.filter((t) => t.status === "occupied").length;
-  const totalTables = MOCK_TABLE_STATUS.length;
-  const visibleGames = MOCK_STORE_GAMES.filter((g) => g.isVisible).length;
-  const todayRevenue = MOCK_ADMIN_ORDERS
-    .filter((o) => o.status !== "CANCELLED")
-    .reduce((sum, o) => sum + o.totalPrice, 0);
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/dashboard/store?storeId=1")
+      .then((r) => r.json())
+      .then((d) => { setData(d); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex h-full items-center justify-center text-gray-400">
+        <p>로딩 중...</p>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="flex h-full items-center justify-center text-gray-400">
+        <p>데이터를 불러올 수 없습니다.</p>
+      </div>
+    );
+  }
+
+  const { pendingOrders, preparingOrders, occupiedTables, totalTables, todayRevenue, recentOrders, tableStatus } = data;
 
   return (
     <div className="h-full overflow-y-auto">
@@ -52,7 +91,7 @@ export default function StoreDashboardPage() {
           <StatCard
             label="테이블 현황"
             value={`${occupiedTables}/${totalTables}`}
-            sub={`${((occupiedTables / totalTables) * 100).toFixed(0)}% 이용 중`}
+            sub={totalTables > 0 ? `${((occupiedTables / totalTables) * 100).toFixed(0)}% 이용 중` : "테이블 없음"}
             color="blue"
             link="/admin/store/tables"
           />
@@ -73,23 +112,27 @@ export default function StoreDashboardPage() {
               </Link>
             </div>
             <div className="divide-y divide-gray-50">
-              {MOCK_ADMIN_ORDERS.slice(0, 5).map((order) => (
-                <div key={order.id} className="flex items-center justify-between px-5 py-3">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-gray-900">#{order.id}</span>
-                      <span className="text-xs text-gray-400">{order.tableNo}번</span>
-                      <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${ADMIN_ORDER_STATUS_COLOR[order.status]}`}>
-                        {ADMIN_ORDER_STATUS_LABEL[order.status]}
-                      </span>
+              {recentOrders.length === 0 ? (
+                <div className="px-5 py-8 text-center text-sm text-gray-400">오늘 주문이 없습니다</div>
+              ) : (
+                recentOrders.map((order) => (
+                  <div key={order.id} className="flex items-center justify-between px-5 py-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-gray-900">#{order.id}</span>
+                        <span className="text-xs text-gray-400">{order.tableNo}번</span>
+                        <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${ADMIN_ORDER_STATUS_COLOR[order.status] ?? "bg-gray-100 text-gray-500"}`}>
+                          {ADMIN_ORDER_STATUS_LABEL[order.status] ?? order.status}
+                        </span>
+                      </div>
+                      <p className="mt-0.5 text-xs text-gray-500">
+                        {order.items.map((i) => `${i.menuName} x${i.quantity}`).join(", ")}
+                      </p>
                     </div>
-                    <p className="mt-0.5 text-xs text-gray-500">
-                      {order.items.map((i) => `${i.menuName} x${i.quantity}`).join(", ")}
-                    </p>
+                    <span className="text-sm font-bold text-gray-700">{formatPrice(order.totalPrice)}</span>
                   </div>
-                  <span className="text-sm font-bold text-gray-700">{formatPrice(order.totalPrice)}</span>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 
@@ -102,7 +145,7 @@ export default function StoreDashboardPage() {
               </Link>
             </div>
             <div className="grid grid-cols-7 gap-2 p-4">
-              {MOCK_TABLE_STATUS.map((table) => (
+              {tableStatus.map((table) => (
                 <div
                   key={table.id}
                   className={`flex h-10 items-center justify-center rounded-lg text-xs font-bold ${
@@ -134,12 +177,6 @@ export default function StoreDashboardPage() {
 function StatCard({ label, value, sub, color, alert, link }: {
   label: string; value: string; sub?: string; color: string; alert?: boolean; link?: string;
 }) {
-  const colorMap: Record<string, string> = {
-    orange: "bg-orange-50 text-orange-700",
-    yellow: "bg-yellow-50 text-yellow-700",
-    blue: "bg-blue-50 text-blue-700",
-    green: "bg-green-50 text-green-700",
-  };
   const content = (
     <div className={`rounded-xl border border-gray-200 bg-white p-4 ${alert ? "ring-2 ring-orange-300" : ""}`}>
       <p className="text-xs font-medium text-gray-500">{label}</p>

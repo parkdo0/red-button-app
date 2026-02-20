@@ -8,7 +8,6 @@ import { Prisma } from "@prisma/client";
  *   ?playerCount=2인,3~4인
  *   &genre=전략,추리
  *   &difficulty=EASY,MEDIUM
- *   &category=전략
  *   &search=카탄
  */
 export async function GET(request: NextRequest) {
@@ -18,18 +17,12 @@ export async function GET(request: NextRequest) {
     const playerCount = searchParams.get("playerCount")?.split(",").filter(Boolean) ?? [];
     const genre = searchParams.get("genre")?.split(",").filter(Boolean) ?? [];
     const difficulty = searchParams.get("difficulty")?.split(",").filter(Boolean) ?? [];
-    const category = searchParams.get("category");
     const search = searchParams.get("search");
 
     // 동적 where 조건 구성
     const where: Prisma.GameWhereInput = {
       isActive: true,
     };
-
-    // 카테고리 필터
-    if (category) {
-      where.category = { name: category };
-    }
 
     // 검색어 필터
     if (search) {
@@ -39,7 +32,7 @@ export async function GET(request: NextRequest) {
     // 난이도 필터
     if (difficulty.length > 0) {
       where.difficulty = {
-        in: difficulty as Array<"EASY" | "MEDIUM" | "HARD" | "EXPERT">,
+        in: difficulty as Array<"VERY_EASY" | "EASY" | "NORMAL" | "SEMI_HARD" | "HARD" | "EXTREME">,
       };
     }
 
@@ -73,20 +66,19 @@ export async function GET(request: NextRequest) {
     const games = await prisma.game.findMany({
       where,
       include: {
-        category: { select: { name: true } },
         tags: {
           include: {
             tag: { select: { group: true, value: true } },
           },
         },
+        hashtags: { select: { text: true } },
       },
-      orderBy: [{ category: { displayOrder: "asc" } }, { title: "asc" }],
+      orderBy: { title: "asc" },
     });
 
     // 응답 형태를 프론트엔드 타입에 맞게 변환
     const result = games.map((game) => ({
       id: game.id,
-      categoryName: game.category.name,
       title: game.title,
       description: game.description,
       thumbnailUrl: game.thumbnailUrl,
@@ -99,6 +91,7 @@ export async function GET(request: NextRequest) {
         group: gt.tag.group,
         value: gt.tag.value,
       })),
+      hashtags: game.hashtags.map((h) => h.text),
     }));
 
     return NextResponse.json(result);
@@ -106,7 +99,64 @@ export async function GET(request: NextRequest) {
     console.error("게임 목록 조회 실패:", error);
     return NextResponse.json(
       { error: "게임 목록을 불러오는 데 실패했습니다." },
-      { status: 500 }
+      { status: 500 },
     );
+  }
+}
+
+/**
+ * POST /api/games
+ * 게임 생성 (Admin)
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { title, description, thumbnailUrl, videoUrl, minPlayers, maxPlayers,
+      recommendedPlayers, playTime, playTimeCategory, difficulty, defaultShelfLoc,
+      tagIds, hashtags } = body;
+
+    if (!title || !minPlayers || !maxPlayers || !difficulty) {
+      return NextResponse.json(
+        { error: "title, minPlayers, maxPlayers, difficulty는 필수입니다." },
+        { status: 400 }
+      );
+    }
+
+    const game = await prisma.game.create({
+      data: {
+        title,
+        description: description ?? "",
+        thumbnailUrl: thumbnailUrl ?? null,
+        videoUrl: videoUrl ?? null,
+        minPlayers,
+        maxPlayers,
+        recommendedPlayers: recommendedPlayers ?? `${minPlayers}-${maxPlayers}인`,
+        playTime: playTime ?? null,
+        playTimeCategory: playTimeCategory ?? null,
+        difficulty,
+        defaultShelfLoc: defaultShelfLoc ?? "",
+        // 태그 연결
+        ...(tagIds?.length > 0 && {
+          tags: {
+            create: tagIds.map((tagId: number) => ({ tagId })),
+          },
+        }),
+        // 해시태그 생성
+        ...(hashtags?.length > 0 && {
+          hashtags: {
+            create: hashtags.map((text: string, idx: number) => ({ text, order: idx })),
+          },
+        }),
+      },
+      include: {
+        tags: { include: { tag: true } },
+        hashtags: true,
+      },
+    });
+
+    return NextResponse.json(game, { status: 201 });
+  } catch (error) {
+    console.error("게임 생성 실패:", error);
+    return NextResponse.json({ error: "게임 생성에 실패했습니다." }, { status: 500 });
   }
 }

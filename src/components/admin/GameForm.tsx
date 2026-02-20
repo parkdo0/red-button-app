@@ -8,7 +8,7 @@ import {
   type Game,
   type Difficulty,
   type GameTag,
-} from "@/data/mock";
+} from "@/data/constants";
 
 interface Props {
   /** 수정 모드일 때 기존 게임 데이터 전달 */

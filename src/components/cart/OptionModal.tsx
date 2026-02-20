@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { type MenuItem, type MenuOptionGroup, formatPrice } from "@/data/mock";
+import { type MenuItem, type MenuOptionGroup, formatPrice } from "@/data/constants";
 import { useCart, type CartItemOption } from "@/components/cart/CartProvider";
 import { useToast } from "@/components/ToastProvider";
 

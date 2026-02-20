@@ -1,7 +1,11 @@
-import { MOCK_GAMES, DIFFICULTY_LABEL, type Game } from "@/data/mock";
+import { DIFFICULTY_LABEL, type Game } from "@/data/constants";
+import type { Difficulty } from "@prisma/client";
+import { getGame, searchGames } from "@/lib/queries";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import YoutubePlayer from "@/components/YoutubePlayer";
+
+const STORE_ID = 1;
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -30,18 +34,15 @@ function getGenres(game: Game): string[] {
  */
 export default async function GameDetailPage({ params }: Props) {
   const { id } = await params;
-  const game = MOCK_GAMES.find((g) => g.id === Number(id));
+  const game = await getGame(Number(id), STORE_ID);
 
   if (!game) notFound();
 
-  const genres = getGenres(game);
+  const genres = getGenres(game as Game);
 
-  // 태그 기반 유사 게임 추천
-  const similarGames = MOCK_GAMES.filter(
-    (g) =>
-      g.id !== game.id &&
-      g.tags.some((t) => game.tags.some((gt) => gt.group === t.group && gt.value === t.value))
-  ).slice(0, 4);
+  // 태그 기반 유사 게임 추천 - 같은 장르 게임 조회
+  const allGames = await searchGames(STORE_ID, { genres: genres.slice(0, 2) });
+  const similarGames = allGames.filter((g) => g.id !== game.id).slice(0, 4);
 
   return (
     <div className="h-full overflow-y-auto scrollbar-thin px-6 py-6 md:px-8">
@@ -68,7 +69,7 @@ export default async function GameDetailPage({ params }: Props) {
             <div className="flex items-center gap-3 flex-wrap">
               <h1 className="text-2xl font-extrabold text-text-primary tracking-tight">{game.title}</h1>
               <span className={BADGE_CLASS[game.difficulty] ?? "rb-badge"}>
-                {DIFFICULTY_LABEL[game.difficulty]}
+                {DIFFICULTY_LABEL[game.difficulty as Difficulty]}
               </span>
             </div>
 
@@ -95,7 +96,7 @@ export default async function GameDetailPage({ params }: Props) {
             {/* 해시태그 */}
             {game.hashtags.length > 0 && (
               <div className="mt-4 flex flex-wrap gap-2">
-                {game.hashtags.map((tag, i) => (
+                {game.hashtags.map((tag: string, i: number) => (
                   <span key={i} className="text-xs font-medium text-red-primary">
                     #{tag}
                   </span>
@@ -117,7 +118,7 @@ export default async function GameDetailPage({ params }: Props) {
               <InfoRow label="장르/테마" value={genres.join(", ") || "-"} />
               <InfoRow label="추천 인원" value={game.recommendedPlayers} />
               <InfoRow label="가능 인원" value={`${game.minPlayers}-${game.maxPlayers}인`} />
-              <InfoRow label="난이도" value={DIFFICULTY_LABEL[game.difficulty]} />
+              <InfoRow label="난이도" value={DIFFICULTY_LABEL[game.difficulty as Difficulty]} />
               {game.playTime && <InfoRow label="플레이 시간" value={`약 ${game.playTime}분`} />}
               <InfoRow label="진열 위치" value={game.shelfLocation} />
             </div>
@@ -143,7 +144,7 @@ export default async function GameDetailPage({ params }: Props) {
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold text-text-primary group-hover:text-red-primary transition-colors">{sg.title}</p>
                       <p className="text-[11px] text-text-muted">
-                        {sg.recommendedPlayers} · {DIFFICULTY_LABEL[sg.difficulty]}
+                        {sg.recommendedPlayers} · {DIFFICULTY_LABEL[sg.difficulty as Difficulty]}
                       </p>
                     </div>
                   </Link>

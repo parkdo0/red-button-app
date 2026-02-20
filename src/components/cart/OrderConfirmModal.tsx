@@ -1,6 +1,6 @@
 "use client";
 
-import { formatPrice } from "@/data/mock";
+import { formatPrice } from "@/data/constants";
 import { type CartItem } from "@/components/cart/CartProvider";
 
 interface Props {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCart } from "@/components/cart/CartProvider";
-import { formatPrice } from "@/data/mock";
+import { formatPrice } from "@/data/constants";
 
 interface Props {
   onOpenCart: () => void;

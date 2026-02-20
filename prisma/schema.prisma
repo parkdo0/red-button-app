@@ -5,11 +5,13 @@
 // ============================================
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextIndex"]
 }
 
 datasource db {
   provider = "mysql"
+  url      = env("DATABASE_URL")
 }
 
 // ============================================
@@ -155,9 +157,10 @@ model Game {
   createdAt          DateTime   @default(now())
   updatedAt          DateTime   @updatedAt
 
-  tags       GameTag[]
-  hashtags   GameHashtag[]
-  storeGames StoreGame[]
+  tags           GameTag[]
+  hashtags       GameHashtag[]
+  storeGames     StoreGame[]
+  recommendItems RecommendCategoryItem[]
 
   @@index([difficulty])
   @@index([playTimeCategory])
@@ -246,6 +249,7 @@ model RecommendCategoryItem {
   order      Int @default(0)
 
   category RecommendCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  game     Game              @relation(fields: [gameId], references: [id], onDelete: Cascade)
 
   @@id([categoryId, gameId])
   @@map("recommend_category_items")

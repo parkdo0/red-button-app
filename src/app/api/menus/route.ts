@@ -41,7 +41,9 @@ export async function GET(request: NextRequest) {
       description: menu.description,
       imageUrl: menu.imageUrl,
       basePrice: menu.basePrice,
-      isAvailable: menu.isAvailable,
+      isAvailable: menu.isActive,
+      isNew: menu.isNew,
+      isBest: menu.isBest,
       optionGroups: menu.optionGroups.map((group) => ({
         id: group.id,
         name: group.name,
@@ -63,5 +65,44 @@ export async function GET(request: NextRequest) {
       { error: "메뉴를 불러오는 데 실패했습니다." },
       { status: 500 }
     );
+  }
+}
+
+/**
+ * POST /api/menus
+ * 메뉴 생성 (Admin)
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { categoryId, name, description, imageUrl, basePrice, isNew, isBest } = body;
+
+    if (!categoryId || !name || basePrice === undefined) {
+      return NextResponse.json(
+        { error: "categoryId, name, basePrice는 필수입니다." },
+        { status: 400 }
+      );
+    }
+
+    const menu = await prisma.menu.create({
+      data: {
+        categoryId,
+        name,
+        description: description ?? null,
+        imageUrl: imageUrl ?? null,
+        basePrice,
+        isNew: isNew ?? false,
+        isBest: isBest ?? false,
+      },
+      include: {
+        category: { select: { name: true } },
+        optionGroups: { include: { options: true } },
+      },
+    });
+
+    return NextResponse.json(menu, { status: 201 });
+  } catch (error) {
+    console.error("메뉴 생성 실패:", error);
+    return NextResponse.json({ error: "메뉴 생성에 실패했습니다." }, { status: 500 });
   }
 }
