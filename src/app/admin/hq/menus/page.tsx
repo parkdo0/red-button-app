@@ -177,8 +177,8 @@ export default function HQMenusPage() {
                       </div>
                     ) : (
                       <div className="flex justify-center gap-1">
-                        <button onClick={() => startEdit(menu)} className="rounded bg-gray-100 px-2 py-1 text-[10px] text-gray-600 hover:bg-gray-200">✏️</button>
-                        <button onClick={() => deleteMenu(menu.id)} className="rounded bg-gray-100 px-2 py-1 text-[10px] text-gray-600 hover:bg-red-100 hover:text-red-600">🗑</button>
+                        <button onClick={() => startEdit(menu)} className="rounded bg-gray-100 px-2 py-1 text-[10px] text-gray-600 hover:bg-gray-200"></button>
+                        <button onClick={() => deleteMenu(menu.id)} className="rounded bg-gray-100 px-2 py-1 text-[10px] text-gray-600 hover:bg-red-100 hover:text-red-600"></button>
                       </div>
                     )}
                   </td>

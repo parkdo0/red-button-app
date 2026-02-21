@@ -139,7 +139,7 @@ export default async function GameDetailPage({ params }: Props) {
                     className="group flex items-center gap-3 rb-card rb-card-glow p-3 touch-feedback"
                   >
                     <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-bg-elevated to-bg-secondary">
-                      <span className="text-lg">🎲</span>
+                      <span className="text-lg"></span>
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold text-text-primary group-hover:text-red-primary transition-colors">{sg.title}</p>

@@ -37,7 +37,7 @@ export default function OrderConfirmModal({
               isLoading ? "bg-yellow-50" : "bg-red-50"
             }`}
           >
-            <span className="text-2xl">{isLoading ? "⏳" : "🛒"}</span>
+            <span className="text-2xl">{isLoading ? "⏳" : ""}</span>
           </div>
         </div>
 

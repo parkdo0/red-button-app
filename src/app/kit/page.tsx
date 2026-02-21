@@ -21,7 +21,7 @@ const KIT_TOOLS: KitTool[] = [
     buttonLabel: "룰렛 굴리기",
     gradient: "from-pink-600 via-rose-500 to-pink-700",
     buttonColor: "bg-pink-400 hover:bg-pink-500",
-    emoji: "🎰",
+    emoji: "",
     badge: "HOT",
   },
   {
@@ -40,20 +40,20 @@ const KIT_TOOLS: KitTool[] = [
     buttonLabel: "팀 정하기",
     gradient: "from-violet-600 via-purple-500 to-violet-700",
     buttonColor: "bg-violet-400 hover:bg-violet-500",
-    emoji: "👥",
+    emoji: "",
   },
 ];
 
 /** 벌칙 목록 */
 const PUNISHMENTS = [
-  "물 한 잔 원샷! 💧",
-  "30초 안에 자기소개 랩 하기 🎤",
-  "옆 사람 칭찬 3개 하기 💕",
-  "개인기 하나 보여주기 🎪",
-  "1분 동안 말 안 하기 🤫",
-  "다음 판 핸디캡! 😈",
-  "얼음 하나 입에 넣고 10초 🧊",
-  "가장 좋아하는 노래 한 소절 🎵",
+  "물 한 잔 원샷! ",
+  "30초 안에 자기소개 랩 하기 ",
+  "옆 사람 칭찬 3개 하기 ",
+  "개인기 하나 보여주기 ",
+  "1분 동안 말 안 하기 ",
+  "다음 판 핸디캡! ",
+  "얼음 하나 입에 넣고 10초 ",
+  "가장 좋아하는 노래 한 소절 ",
 ];
 
 /**
@@ -138,11 +138,11 @@ function RouletteModal({ onClose }: { onClose: () => void }) {
   }, []);
 
   return (
-    <ToolModal title="벌칙 룰렛 🎰" onClose={onClose}>
+    <ToolModal title="벌칙 룰렛 " onClose={onClose}>
       <div className="flex flex-col items-center gap-6 py-4">
         <div className={`flex h-32 w-full items-center justify-center rounded-2xl bg-bg-card border border-border-default ${spinning ? "animate-pulse" : ""}`}>
           {spinning ? (
-            <span className="text-2xl font-bold text-text-muted">🎰 돌리는 중...</span>
+            <span className="text-2xl font-bold text-text-muted">돌리는 중...</span>
           ) : result ? (
             <span className="text-xl font-bold text-red-primary px-4 text-center">{result}</span>
           ) : (
@@ -234,7 +234,7 @@ function TeamPickerModal({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <ToolModal title="팀 정하기 👥" onClose={onClose}>
+    <ToolModal title="팀 정하기 " onClose={onClose}>
       <div className="flex flex-col gap-4 py-2">
         <div>
           <label className="text-sm font-semibold text-text-secondary mb-2 block">인원 수</label>

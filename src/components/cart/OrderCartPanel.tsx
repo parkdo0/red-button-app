@@ -14,10 +14,10 @@ type PanelTab = "cart" | "history";
 
 /**
  * F&B 주문 우측 상시 패널 - 실제 레드버튼 앱 기준
- * ✅ Split View (항상 보임, 오버레이 아님)
- * ✅ 장바구니 탭 + 주문 내역 탭
- * ✅ 라이트 테마 (흰 배경)
- * ✅ 하단 안내: "1인 1주문 필수입니다. 세트메뉴는 2인 인정 됩니다."
+ * Split View (항상 보임, 오버레이 아님)
+ * 장바구니 탭 + 주문 내역 탭
+ * 라이트 테마 (흰 배경)
+ * 하단 안내: "1인 1주문 필수입니다. 세트메뉴는 2인 인정 됩니다."
  */
 export default function OrderCartPanel() {
   const [activeTab, setActiveTab] = useState<PanelTab>("cart");

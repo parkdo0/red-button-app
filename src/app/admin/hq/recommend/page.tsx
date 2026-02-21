@@ -123,7 +123,7 @@ export default function HQRecommendPage() {
                     {cat.isActive ? "활성" : "비활성"}
                   </button>
                   <button onClick={() => setExpandedId(isExpanded ? null : cat.id)} className="text-xs text-gray-400 hover:text-gray-600">{isExpanded ? "접기" : "펼치기"}</button>
-                  <button onClick={() => deleteCategory(cat.id)} className="rounded bg-gray-100 px-2 py-1 text-[10px] text-gray-500 hover:bg-red-100 hover:text-red-600">🗑</button>
+                  <button onClick={() => deleteCategory(cat.id)} className="rounded bg-gray-100 px-2 py-1 text-[10px] text-gray-500 hover:bg-red-100 hover:text-red-600"></button>
                 </div>
                 {isExpanded && (
                   <div className="border-t border-gray-100 p-4">

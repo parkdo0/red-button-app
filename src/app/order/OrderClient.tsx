@@ -9,11 +9,11 @@ import { useToast } from "@/components/ToastProvider";
 
 /**
  * F&B 주문 페이지 - 실제 레드버튼 앱 기준
- * ✅ 라이트(흰색) 테마 (게임 페이지와 다름)
- * ✅ 텍스트 탭 + 빨간 밑줄 (pill 아님)
- * ✅ 프로모션 배너
- * ✅ 세로형 그리드 (4열)
- * ✅ 우측 40% 상시 장바구니 패널 (Split View)
+ * 라이트(흰색) 테마 (게임 페이지와 다름)
+ * 텍스트 탭 + 빨간 밑줄 (pill 아님)
+ * 프로모션 배너
+ * 세로형 그리드 (4열)
+ * 우측 40% 상시 장바구니 패널 (Split View)
  */
 interface Props {
   menus: MenuItem[];
@@ -170,10 +170,10 @@ function getFilteredMenus(tab: string, allMenus: MenuItem[]): MenuItem[] {
 /** 카테고리별 이모지 */
 function getCategoryEmoji(category: string): string {
   const map: Record<string, string> = {
-    "푸드": "🍕",
-    "음료": "🥤",
-    "벌칙메뉴": "🎲",
-    "MD상품": "🎁",
+    "푸드": "",
+    "음료": "",
+    "벌칙메뉴": "",
+    "MD상품": "",
   };
-  return map[category] ?? "🍽";
+  return map[category] ?? "";
 }

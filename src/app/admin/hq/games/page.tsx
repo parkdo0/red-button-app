@@ -116,7 +116,7 @@ export default function HQGamesPage() {
                       <td className="px-4 py-3 text-center text-gray-400">{game.id}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2.5">
-                          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-gray-100 text-lg">🎲</div>
+                          <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-gray-100 text-lg"></div>
                           <div>
                             <p className="font-semibold text-gray-900">{game.title}</p>
                             <p className="text-[11px] text-gray-400 line-clamp-1">{game.description}</p>

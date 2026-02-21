@@ -9,12 +9,12 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("🌱 Seeding database...\n");
+  console.log("Seeding database...\n");
 
   // ============================================
   // 0. 기존 데이터 정리 (순서 중요: FK 의존성)
   // ============================================
-  console.log("🗑️  Cleaning existing data...");
+  console.log(" Cleaning existing data...");
   await prisma.orderItemOption.deleteMany();
   await prisma.orderItem.deleteMany();
   await prisma.order.deleteMany();
@@ -40,7 +40,7 @@ async function main() {
   // ============================================
   // 1. 매장 (Stores)
   // ============================================
-  console.log("🏪 Creating stores...");
+  console.log("Creating stores...");
   const stores = await Promise.all([
     prisma.store.create({
       data: {
@@ -71,12 +71,12 @@ async function main() {
       },
     }),
   ]);
-  console.log(`  ✅ ${stores.length} stores created`);
+  console.log(`  ${stores.length} stores created`);
 
   // ============================================
   // 2. 관리자 계정 (Admin Users)
   // ============================================
-  console.log("👤 Creating admin users...");
+  console.log("Creating admin users...");
   const adminPw = await bcrypt.hash("admin1234", 10);
   const storePw = await bcrypt.hash("store1234", 10);
   const staffPw = await bcrypt.hash("staff1234", 10);
@@ -89,12 +89,12 @@ async function main() {
       { id: 5, loginId: "staff1", email: "staff1@redbutton.co.kr", password: staffPw, name: "정직원", role: "STORE_STAFF", storeId: 1, isActive: true },
     ],
   });
-  console.log("  ✅ 5 admin users created (hq/admin1234, suwon/store1234, gangnam/store1234, hongdae/store1234, staff1/staff1234)");
+  console.log("  5 admin users created (hq/admin1234, suwon/store1234, gangnam/store1234, hongdae/store1234, staff1/staff1234)");
 
   // ============================================
   // 3. 테이블 (수원점 35석)
   // ============================================
-  console.log("🪑 Creating tables...");
+  console.log("Creating tables...");
 
   // setupCode 생성 헬퍼: 매장코드 + 테이블번호 패딩 + 랜덤 2자리 (개발용은 고정 "AA")
   const makeSetupCode = (storeCode: string, tableNo: number) =>
@@ -120,12 +120,12 @@ async function main() {
     tableData.push({ storeId: 4, tableNo: String(i + 1), seats: 4, setupCode: makeSetupCode("BS", i + 1), isActive: true });
   }
   await prisma.table.createMany({ data: tableData });
-  console.log(`  ✅ ${tableData.length} tables created`);
+  console.log(`  ${tableData.length} tables created`);
 
   // ============================================
   // 4. 태그 (Tags) - 게임 검색 필터
   // ============================================
-  console.log("🏷️  Creating tags...");
+  console.log(" Creating tags...");
   const genreTags = [
     "초보", "중수", "고수", "커플", "단체", "패밀리", "어린이", "전략",
     "손기술/순발력", "추리/방탈출", "주사위/운빨", "심리/눈치", "마피아",
@@ -142,12 +142,12 @@ async function main() {
   await prisma.tag.createMany({ data: tagData });
   const allTags = await prisma.tag.findMany();
   const tagMap = new Map(allTags.map((t) => [`${t.group}:${t.value}`, t.id]));
-  console.log(`  ✅ ${allTags.length} tags created`);
+  console.log(`  ${allTags.length} tags created`);
 
   // ============================================
   // 5. 게임 (Games) + GameTag + GameHashtag
   // ============================================
-  console.log("🎲 Creating games...");
+  console.log("Creating games...");
 
   interface GameSeed {
     id: number; title: string; description: string;
@@ -203,12 +203,12 @@ async function main() {
       },
     });
   }
-  console.log(`  ✅ ${gamesData.length} games created with tags & hashtags`);
+  console.log(`  ${gamesData.length} games created with tags & hashtags`);
 
   // ============================================
   // 6. F&B 카테고리 + 메뉴 + 옵션
   // ============================================
-  console.log("🍔 Creating categories & menus...");
+  console.log("Creating categories & menus...");
   const cats = await Promise.all([
     prisma.category.create({ data: { id: 1, name: "푸드", displayOrder: 0 } }),
     prisma.category.create({ data: { id: 2, name: "음료", displayOrder: 1 } }),
@@ -262,12 +262,12 @@ async function main() {
       },
     });
   }
-  console.log(`  ✅ ${menusData.length} menus created with option groups`);
+  console.log(`  ${menusData.length} menus created with option groups`);
 
   // ============================================
   // 7. 매장별 게임 보유 (StoreGame) - 수원점
   // ============================================
-  console.log("🎮 Creating store games (수원점)...");
+  console.log("Creating store games (수원점)...");
   const storeGameIds = [1, 2, 3, 4, 7, 8, 9, 10, 12, 13, 14, 16, 18, 19, 20];
   await prisma.storeGame.createMany({
     data: storeGameIds.map((gameId) => ({
@@ -276,29 +276,29 @@ async function main() {
       shelfLocation: gameId === 4 ? "ㅁ-2" : null, // 도미니언만 오버라이드
     })),
   });
-  console.log(`  ✅ ${storeGameIds.length} store games linked`);
+  console.log(`  ${storeGameIds.length} store games linked`);
 
   // ============================================
   // 8. 매장별 메뉴 (StoreMenu) - 수원점 전체 메뉴 판매
   // ============================================
-  console.log("🍽️  Creating store menus (수원점)...");
+  console.log(" Creating store menus (수원점)...");
   await prisma.storeMenu.createMany({
     data: menusData.map((m) => ({
       storeId: 1, menuId: m.id, isAvailable: true, priceOverride: null,
     })),
   });
-  console.log(`  ✅ ${menusData.length} store menus linked`);
+  console.log(`  ${menusData.length} store menus linked`);
 
   // ============================================
   // 9. 추천 카테고리 (홈 화면)
   // ============================================
   console.log("⭐ Creating recommend categories...");
   const recommendData = [
-    { id: 1, title: "입문자를 위해 엄선한 재미보장 보드게임", subtitle: "보드게임이 처음이시라면, 이 게임 어떠세요?", emoji: "🎲", gameIds: [1, 2, 3, 8, 9, 7] },
-    { id: 2, title: "수 싸움의 미학 전략게임.zip", subtitle: "", emoji: "😏", gameIds: [4, 5, 6, 18, 14] },
-    { id: 3, title: "완전 럭키비키잖아? 잭팟이 터지는 순간", subtitle: "", emoji: "🍀", gameIds: [7, 8, 19, 1] },
-    { id: 4, title: "다 같이 떠들어! 단체 파티게임 모음", subtitle: "", emoji: "🎉", gameIds: [2, 12, 13, 10, 16] },
-    { id: 5, title: "둘만의 보드게임 커플 추천 TOP", subtitle: "", emoji: "💕", gameIds: [15, 14, 20, 3] },
+    { id: 1, title: "입문자를 위해 엄선한 재미보장 보드게임", subtitle: "보드게임이 처음이시라면, 이 게임 어떠세요?", emoji: "", gameIds: [1, 2, 3, 8, 9, 7] },
+    { id: 2, title: "수 싸움의 미학 전략게임.zip", subtitle: "", emoji: "", gameIds: [4, 5, 6, 18, 14] },
+    { id: 3, title: "완전 럭키비키잖아? 잭팟이 터지는 순간", subtitle: "", emoji: "", gameIds: [7, 8, 19, 1] },
+    { id: 4, title: "다 같이 떠들어! 단체 파티게임 모음", subtitle: "", emoji: "", gameIds: [2, 12, 13, 10, 16] },
+    { id: 5, title: "둘만의 보드게임 커플 추천 TOP", subtitle: "", emoji: "", gameIds: [15, 14, 20, 3] },
   ];
   for (const rc of recommendData) {
     await prisma.recommendCategory.create({
@@ -311,12 +311,12 @@ async function main() {
       },
     });
   }
-  console.log(`  ✅ ${recommendData.length} recommend categories created`);
+  console.log(`  ${recommendData.length} recommend categories created`);
 
   // ============================================
   // 10. 이벤트 배너
   // ============================================
-  console.log("🎪 Creating events...");
+  console.log("Creating events...");
   await prisma.event.createMany({
     data: [
       { id: 1, title: "LIAR & TROLL SHOW", subtitle: "레드버튼 오리지널 게임 세번째 시리즈 공개!", imageUrl: "/images/events/liehunt.jpg", order: 0, isActive: true, startDate: new Date("2026-01-15"), endDate: new Date("2026-02-28") },
@@ -325,12 +325,12 @@ async function main() {
       { id: 4, title: "설날 특별 이벤트", subtitle: "가족과 함께하는 보드게임", imageUrl: "/images/events/newyear.jpg", order: 3, isActive: false, startDate: new Date("2026-01-28"), endDate: new Date("2026-01-30") },
     ],
   });
-  console.log("  ✅ 4 events created");
+  console.log("  4 events created");
 
   // ============================================
   // 11. 테이블 세션 (수원점 - 현재 이용중인 테이블)
   // ============================================
-  console.log("🪑 Creating table sessions...");
+  console.log("Creating table sessions...");
   const occupiedTables = [1, 3, 7, 11, 15, 18, 22, 25, 28, 31];
   const suwonTables = await prisma.table.findMany({ where: { storeId: 1 } });
   const tableIdMap = new Map(suwonTables.map((t) => [parseInt(t.tableNo), t.id]));
@@ -347,12 +347,12 @@ async function main() {
       },
     });
   }
-  console.log(`  ✅ ${occupiedTables.length} active sessions created`);
+  console.log(`  ${occupiedTables.length} active sessions created`);
 
   // ============================================
   // 12. 주문 (수원점)
   // ============================================
-  console.log("📋 Creating orders...");
+  console.log("Creating orders...");
   const orderSeeds = [
     { tableNo: "31", status: "PENDING", minutesAgo: 2, items: [{ menuId: 1, menuName: "마라떡볶이", basePrice: 9500, quantity: 1 }, { menuId: 9, menuName: "콜라", basePrice: 2500, quantity: 2 }] },
     { tableNo: "15", status: "PENDING", minutesAgo: 6, items: [{ menuId: 3, menuName: "크리스피 콜팝", basePrice: 6500, quantity: 3 }, { menuId: 8, menuName: "제로 복숭아 아이스티", basePrice: 4300, quantity: 1 }] },
@@ -381,12 +381,12 @@ async function main() {
       },
     });
   }
-  console.log(`  ✅ ${orderSeeds.length} orders created`);
+  console.log(`  ${orderSeeds.length} orders created`);
 
   // ============================================
   // 13. 카운터 쪽지 (채팅 메시지)
   // ============================================
-  console.log("💬 Creating chat messages...");
+  console.log("Creating chat messages...");
   const chatSeeds = [
     { tableNo: "31", messages: [
       { sender: "STORE", text: "안녕하세요, 레드버튼 수원점입니다!\n즐거운 시간 보내시기 바라요.\n<wifi 정보>\nID: redbutton\nPW: red2563799", minutesAgo: 9 },
@@ -419,12 +419,12 @@ async function main() {
       });
     }
   }
-  console.log("  ✅ Chat messages created");
+  console.log("  Chat messages created");
 
   // ============================================
   // Done!
   // ============================================
-  console.log("\n🎉 Seed completed successfully!");
+  console.log("\nSeed completed successfully!");
   console.log("   - 4 stores, 130 tables");
   console.log("   - 5 admin users");
   console.log("   - 31 tags, 20 games");
@@ -437,7 +437,7 @@ async function main() {
 
 main()
   .catch((e) => {
-    console.error("❌ Seed failed:", e);
+    console.error("Seed failed:", e);
     process.exit(1);
   })
   .finally(async () => {

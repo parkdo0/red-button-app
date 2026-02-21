@@ -83,13 +83,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 // ──────────────────────────────────────
 function HQNav({ pathname }: { pathname: string }) {
   const items = [
-    { href: "/admin/hq", label: "대시보드", icon: "📊", exact: true },
-    { href: "/admin/hq/games", label: "게임 관리", icon: "🎲" },
-    { href: "/admin/hq/menus", label: "메뉴 관리", icon: "🍽" },
+    { href: "/admin/hq", label: "대시보드", icon: "", exact: true },
+    { href: "/admin/hq/games", label: "게임 관리", icon: "" },
+    { href: "/admin/hq/menus", label: "메뉴 관리", icon: "" },
     { href: "/admin/hq/recommend", label: "추천 편성", icon: "⭐" },
-    { href: "/admin/hq/events", label: "이벤트 관리", icon: "🎪" },
-    { href: "/admin/hq/stores", label: "매장 현황", icon: "🏪" },
-    { href: "/admin/hq/tags", label: "태그 관리", icon: "🏷" },
+    { href: "/admin/hq/events", label: "이벤트 관리", icon: "" },
+    { href: "/admin/hq/stores", label: "매장 현황", icon: "" },
+    { href: "/admin/hq/tags", label: "태그 관리", icon: "" },
   ];
 
   return <NavList items={items} pathname={pathname} />;
@@ -101,13 +101,13 @@ function HQNav({ pathname }: { pathname: string }) {
 function StoreNav({ pathname }: { pathname: string }) {
   const session = useSession();
   const items = [
-    { href: "/admin/store", label: "대시보드", icon: "📊", exact: true },
-    { href: "/admin/store/orders", label: "주문 관리", icon: "📋" },
-    { href: "/admin/store/games", label: "게임 노출", icon: "🎲" },
-    { href: "/admin/store/menus", label: "메뉴 관리", icon: "🍽" },
-    { href: "/admin/store/tables", label: "테이블 현황", icon: "🪑" },
-    { href: "/admin/store/chat", label: "카운터 쪽지", icon: "💬" },
-    { href: "/admin/store/settings", label: "매장 설정", icon: "⚙️" },
+    { href: "/admin/store", label: "대시보드", icon: "", exact: true },
+    { href: "/admin/store/orders", label: "주문 관리", icon: "" },
+    { href: "/admin/store/games", label: "게임 노출", icon: "" },
+    { href: "/admin/store/menus", label: "메뉴 관리", icon: "" },
+    { href: "/admin/store/tables", label: "테이블 현황", icon: "" },
+    { href: "/admin/store/chat", label: "카운터 쪽지", icon: "" },
+    { href: "/admin/store/settings", label: "매장 설정", icon: "" },
   ];
 
   return (

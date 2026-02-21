@@ -25,7 +25,7 @@ export default function GameSearchCard({ game, index = 0 }: Props) {
     >
       {/* 좌측: 게임 이미지 (정사각형) */}
       <div className="flex h-[100px] w-[100px] flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-bg-elevated via-bg-card to-bg-secondary">
-        <span className="text-4xl opacity-60 transition-transform duration-300 group-hover:scale-110">🎲</span>
+        <span className="text-4xl opacity-60 transition-transform duration-300 group-hover:scale-110"></span>
       </div>
 
       {/* 중앙: 게임명 + 설명 + 해시태그 */}

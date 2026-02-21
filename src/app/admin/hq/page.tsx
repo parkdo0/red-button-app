@@ -94,9 +94,9 @@ export default function HQDashboardPage() {
         </div>
 
         <div className="mt-6 grid grid-cols-3 gap-4">
-          <QuickLink href="/admin/hq/games" icon="🎲" label="게임 관리" desc="마스터 게임 DB 관리" />
-          <QuickLink href="/admin/hq/menus" icon="🍽" label="메뉴 관리" desc="F&B 메뉴 관리" />
-          <QuickLink href="/admin/hq/events" icon="🎪" label="이벤트 관리" desc="배너 & 프로모션" />
+          <QuickLink href="/admin/hq/games" icon="" label="게임 관리" desc="마스터 게임 DB 관리" />
+          <QuickLink href="/admin/hq/menus" icon="" label="메뉴 관리" desc="F&B 메뉴 관리" />
+          <QuickLink href="/admin/hq/events" icon="" label="이벤트 관리" desc="배너 & 프로모션" />
         </div>
       </div>
     </div>

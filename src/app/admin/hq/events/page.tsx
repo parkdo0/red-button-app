@@ -87,7 +87,7 @@ export default function HQEventsPage() {
                 <span className="text-center text-[10px] font-bold text-gray-400">{index + 1}</span>
                 <button onClick={() => moveDown(event.id)} className="rounded p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600" disabled={index === events.length - 1}>▼</button>
               </div>
-              <div className="h-16 w-28 flex-shrink-0 rounded-lg bg-gray-200 flex items-center justify-center text-xs text-gray-400">🖼 배너</div>
+              <div className="h-16 w-28 flex-shrink-0 rounded-lg bg-gray-200 flex items-center justify-center text-xs text-gray-400">배너</div>
               <div className="flex-1 min-w-0">
                 <h3 className="text-sm font-bold text-gray-900">{event.title}</h3>
                 <p className="mt-0.5 text-xs text-gray-500 truncate">{event.subtitle ?? ""}</p>
@@ -97,8 +97,8 @@ export default function HQEventsPage() {
                 <button onClick={() => toggleActive(event.id, event.isActive)} className={`rounded-full px-3 py-1 text-[10px] font-bold transition-colors ${event.isActive ? "bg-green-100 text-green-700" : "bg-gray-200 text-gray-500"}`}>
                   {event.isActive ? "활성" : "비활성"}
                 </button>
-                <button className="rounded bg-gray-100 px-2 py-1 text-[10px] text-gray-600 hover:bg-gray-200">✏️</button>
-                <button onClick={() => deleteEvent(event.id)} className="rounded bg-gray-100 px-2 py-1 text-[10px] text-gray-600 hover:bg-red-100 hover:text-red-600">🗑</button>
+                <button className="rounded bg-gray-100 px-2 py-1 text-[10px] text-gray-600 hover:bg-gray-200"></button>
+                <button onClick={() => deleteEvent(event.id)} className="rounded bg-gray-100 px-2 py-1 text-[10px] text-gray-600 hover:bg-red-100 hover:text-red-600"></button>
               </div>
             </div>
           ))}

@@ -52,7 +52,7 @@ export default function InfoClient({ storeName, tableNo, wifiId, wifiPw, checkIn
       <div className="grid grid-cols-3 gap-4 px-8 pb-8">
         {/* Wi-Fi */}
         <div className="rb-card p-6 flex flex-col items-center text-center">
-          <div className="mb-3 text-4xl">📶</div>
+          <div className="mb-3 text-4xl"></div>
           <h3 className="text-lg font-bold text-blue-400">Wi-Fi</h3>
           <div className="mt-4 flex flex-col gap-1">
             <div>
@@ -71,7 +71,7 @@ export default function InfoClient({ storeName, tableNo, wifiId, wifiPw, checkIn
           onClick={() => setShowGuide(true)}
           className="rb-card rb-card-glow p-6 flex flex-col items-center text-center cursor-pointer touch-feedback"
         >
-          <div className="mb-3 text-4xl">📋</div>
+          <div className="mb-3 text-4xl"></div>
           <h3 className="text-lg font-bold text-text-primary">이용 안내</h3>
           <p className="mt-2 text-xs text-text-muted leading-relaxed">
             레드버튼 이용 방법을<br />설명해 드립니다
@@ -88,7 +88,7 @@ export default function InfoClient({ storeName, tableNo, wifiId, wifiPw, checkIn
           onClick={() => setShowFeedback(true)}
           className="rb-card rb-card-glow p-6 flex flex-col items-center text-center cursor-pointer touch-feedback"
         >
-          <div className="mb-3 text-4xl">💬</div>
+          <div className="mb-3 text-4xl"></div>
           <h3 className="text-lg font-bold text-text-primary">고객 의견</h3>
           <p className="mt-2 text-xs text-text-muted leading-relaxed">
             레드버튼 본사로 여러분의<br />제안이나 의견을 보내주세요
@@ -121,15 +121,15 @@ export default function InfoClient({ storeName, tableNo, wifiId, wifiPw, checkIn
               <p>기본 2시간 이용이며, 연장은 카운터에서 가능합니다.</p>
             </div>
             <div>
-              <h4 className="font-bold text-text-primary mb-1">🎲 게임 이용</h4>
+              <h4 className="font-bold text-text-primary mb-1">게임 이용</h4>
               <p>진열대에서 원하는 게임을 직접 가져오시면 됩니다. 게임 규칙은 태블릿에서 확인 가능합니다.</p>
             </div>
             <div>
-              <h4 className="font-bold text-text-primary mb-1">🍽 음식 주문</h4>
+              <h4 className="font-bold text-text-primary mb-1">음식 주문</h4>
               <p>태블릿의 &quot;메뉴 주문&quot;에서 주문하시면 자리로 가져다 드립니다.</p>
             </div>
             <div>
-              <h4 className="font-bold text-text-primary mb-1">📦 게임 반납</h4>
+              <h4 className="font-bold text-text-primary mb-1">게임 반납</h4>
               <p>사용한 게임은 원래 자리에 반납해 주세요. 진열 위치는 태블릿에서 확인 가능합니다.</p>
             </div>
           </div>

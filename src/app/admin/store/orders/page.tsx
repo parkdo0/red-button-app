@@ -101,7 +101,7 @@ export default function StoreOrdersPage() {
         </div>
         <div className="flex items-center gap-3">
           <span className="flex items-center gap-1.5 rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-orange-700">
-            🔔 신규 {orders.filter((o) => o.status === "PENDING").length}건
+            신규 {orders.filter((o) => o.status === "PENDING").length}건
           </span>
           <button onClick={fetchOrders} className="rounded-lg border border-gray-200 px-3 py-1 text-xs text-gray-500 hover:bg-gray-50">
             새로고침

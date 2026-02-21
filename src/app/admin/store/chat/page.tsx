@@ -87,7 +87,7 @@ export default function StoreChatPage() {
 
   const quickReplies = [
     "네, 확인하겠습니다!",
-    "잠시만 기다려주세요 😊",
+    "잠시만 기다려주세요 ",
     "화장실은 입구 왼쪽에 있습니다.",
     "음식은 약 5~10분 내로 나갑니다.",
   ];

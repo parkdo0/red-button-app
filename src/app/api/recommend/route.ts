@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
       data: {
         title,
         subtitle: subtitle ?? "",
-        emoji: emoji ?? "🎲",
+        emoji: emoji ?? "",
         order: order ?? 0,
         ...(gameIds?.length > 0 && {
           items: {

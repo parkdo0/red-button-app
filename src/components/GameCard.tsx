@@ -33,7 +33,7 @@ export default function GameCard({ game, index = 0 }: Props) {
       <div className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl rb-card rb-card-glow">
         {/* 그라데이션 배경 (이미지 대체) */}
         <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-bg-elevated via-bg-card to-bg-secondary">
-          <span className="text-4xl opacity-60 transition-transform duration-300 group-hover:scale-110">🎲</span>
+          <span className="text-4xl opacity-60 transition-transform duration-300 group-hover:scale-110"></span>
         </div>
 
         {/* 하단 그라데이션 + 게임 이름 */}

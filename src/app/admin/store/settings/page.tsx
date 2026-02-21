@@ -67,7 +67,7 @@ export default function StoreSettingsPage() {
               saved ? "bg-green-600 text-white" : "bg-red-600 text-white hover:bg-red-700"
             }`}
           >
-            {saved ? "✓ 저장됨" : "저장"}
+            {saved ? "저장됨" : "저장"}
           </button>
         </div>
 

@@ -27,7 +27,7 @@ export default function HQGameEditPage({ params }: { params: Promise<{ id: strin
     return (
       <div className="flex h-full items-center justify-center">
         <div className="text-center">
-          <p className="text-4xl">🎲</p>
+          <p className="text-4xl"></p>
           <p className="mt-2 text-lg font-bold text-gray-900">게임을 찾을 수 없습니다</p>
           <p className="mt-1 text-sm text-gray-500">ID: {id}</p>
         </div>

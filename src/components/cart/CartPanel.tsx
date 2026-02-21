@@ -36,7 +36,7 @@ export default function CartPanel({ onClose }: Props) {
 
     try {
       // DB 연동 시: const order = await postApi<OrderResponse>("/api/orders", body);
-      console.log("📦 주문 요청:", body);
+      console.log("주문 요청:", body);
       await new Promise((r) => setTimeout(r, 600));
       showToast(`주문이 접수되었습니다! (${formatPrice(totalPrice)})`);
 

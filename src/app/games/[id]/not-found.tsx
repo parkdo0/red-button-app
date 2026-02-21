@@ -3,7 +3,7 @@ import Link from "next/link";
 export default function GameNotFound() {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-4">
-      <span className="text-6xl">🎲</span>
+      <span className="text-6xl"></span>
       <h1 className="text-2xl font-bold text-text-primary">
         게임을 찾을 수 없습니다
       </h1>

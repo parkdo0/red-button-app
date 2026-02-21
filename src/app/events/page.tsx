@@ -27,6 +27,6 @@ function getBgGradient(order: number) {
 }
 
 function getEmoji(order: number) {
-  const emojis = ["🎭", "📸", "🎂", "🎉"];
+  const emojis = ["", "", "", ""];
   return emojis[order % emojis.length];
 }

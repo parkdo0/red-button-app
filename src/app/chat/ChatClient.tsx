@@ -11,9 +11,9 @@ export interface ChatMsg {
 
 /** 빠른 질문 버튼 */
 const QUICK_BUTTONS = [
-  { label: "🕐 이용 시간", message: "이용 시간이 얼마나 남았나요?" },
-  { label: "📶 와이파이 비밀번호", message: "와이파이 비밀번호가 뭔가요?" },
-  { label: "🚻 화장실 위치", message: "화장실이 어디에 있나요?" },
+  { label: "이용 시간", message: "이용 시간이 얼마나 남았나요?" },
+  { label: "와이파이 비밀번호", message: "와이파이 비밀번호가 뭔가요?" },
+  { label: "화장실 위치", message: "화장실이 어디에 있나요?" },
 ];
 
 interface Props {
@@ -86,7 +86,7 @@ export default function ChatClient({ storeName, initialMessages }: Props) {
           {
             id: nextIdRef.current++,
             sender: "store",
-            text: "확인했습니다! 곧 답변 드리겠습니다 😊",
+            text: "확인했습니다! 곧 답변 드리겠습니다 ",
             time: getCurrentTime(),
           },
         ]);

@@ -187,7 +187,7 @@ function StatCard({ label, value, sub, color, alert, link }: {
       {sub && <p className="mt-0.5 text-[11px] text-gray-400">{sub}</p>}
       {alert && (
         <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-bold text-orange-600">
-          🔔 처리 필요
+          처리 필요
         </span>
       )}
     </div>
