@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSession } from "@/components/SessionProvider";
 
 interface TableStatus {
   id: number;
   tableNo: string;
   seats: number;
+  setupCode: string | null;
   status: "occupied" | "empty";
   guestCount: number;
   elapsedMinutes: number;
@@ -17,16 +19,18 @@ interface TableStatus {
  * 매장 > 테이블 현황 관리
  */
 export default function StoreTablesPage() {
+  const session = useSession();
   const [tables, setTables] = useState<TableStatus[]>([]);
   const [selectedTable, setSelectedTable] = useState<TableStatus | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchTables = useCallback(() => {
-    fetch("/api/tables?storeId=1")
+    if (!session?.storeId) return;
+    fetch(`/api/tables?storeId=${session.storeId}`)
       .then((r) => r.json())
       .then((data) => { setTables(Array.isArray(data) ? data : []); setLoading(false); })
       .catch(() => setLoading(false));
-  }, []);
+  }, [session?.storeId]);
 
   useEffect(() => { fetchTables(); }, [fetchTables]);
 
@@ -39,12 +43,31 @@ export default function StoreTablesPage() {
       await fetch("/api/sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ storeId: 1, tableId, guestCount }),
+        body: JSON.stringify({ storeId: session?.storeId ?? 1, tableId, guestCount }),
       });
       setSelectedTable(null);
       fetchTables();
     } catch (err) {
       console.error("입장 처리 실패:", err);
+    }
+  };
+
+  /** 코드 재발급 */
+  const regenerateCode = async (tableId: number) => {
+    try {
+      const res = await fetch(`/api/tables/${tableId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "regenerateCode" }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        // 선택된 테이블 + 목록 즉시 반영
+        setSelectedTable((prev) => prev ? { ...prev, setupCode: updated.setupCode } : null);
+        setTables((prev) => prev.map((t) => t.id === tableId ? { ...t, setupCode: updated.setupCode } : t));
+      }
+    } catch (err) {
+      console.error("코드 재발급 실패:", err);
     }
   };
 
@@ -132,6 +155,7 @@ export default function StoreTablesPage() {
           onClose={() => setSelectedTable(null)}
           onCheckIn={checkIn}
           onCheckOut={checkOut}
+          onRegenerateCode={regenerateCode}
           formatTime={formatTime}
         />
       )}
@@ -139,11 +163,12 @@ export default function StoreTablesPage() {
   );
 }
 
-function TableModal({ table, onClose, onCheckIn, onCheckOut, formatTime }: {
+function TableModal({ table, onClose, onCheckIn, onCheckOut, onRegenerateCode, formatTime }: {
   table: TableStatus;
   onClose: () => void;
   onCheckIn: (id: number, guests: number) => void;
   onCheckOut: (table: TableStatus) => void;
+  onRegenerateCode: (tableId: number) => void;
   formatTime: (m: number | null | undefined) => string;
 }) {
   const [guestInput, setGuestInput] = useState(2);
@@ -210,6 +235,24 @@ function TableModal({ table, onClose, onCheckIn, onCheckOut, formatTime }: {
             </button>
           </>
         )}
+
+        {/* 설정 코드 */}
+        <div className="mt-4 rounded-xl bg-gray-50 p-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-[10px] font-bold text-gray-400">설정 코드</span>
+              <p className="text-sm font-bold tracking-wider text-gray-700">
+                {table.setupCode ?? "미발급"}
+              </p>
+            </div>
+            <button
+              onClick={() => onRegenerateCode(table.id)}
+              className="rounded-lg bg-gray-200 px-3 py-1.5 text-[11px] font-bold text-gray-600 hover:bg-gray-300 transition-colors"
+            >
+              {table.setupCode ? "재발급" : "발급"}
+            </button>
+          </div>
+        </div>
 
         <button onClick={onClose} className="mt-2 w-full py-2 text-xs text-gray-400 hover:text-gray-600">닫기</button>
       </div>

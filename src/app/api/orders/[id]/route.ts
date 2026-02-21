@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getApiSession } from "@/lib/auth";
 
 /**
- * PATCH /api/orders/:id
+ * PATCH/POST /api/orders/:id
  * 주문 상태 변경 (PENDING → CONFIRMED → PREPARING → COMPLETED / CANCELLED)
  */
 export async function PATCH(
@@ -10,6 +11,11 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await getApiSession(request);
+    if (!session) {
+      return NextResponse.json({ error: "인증이 필요합니다." }, { status: 401 });
+    }
+
     const { id } = await params;
     const orderId = Number(id);
     if (isNaN(orderId)) {
@@ -44,3 +50,6 @@ export async function PATCH(
     );
   }
 }
+
+/** POST도 동일 처리 (프론트엔드 호환) */
+export { PATCH as POST };

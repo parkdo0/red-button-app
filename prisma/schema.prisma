@@ -1,7 +1,8 @@
 // ============================================
-// 레드버튼(RedButton) 태블릿 앱 클론 - DB 스키마 v3
+// 레드버튼(RedButton) 태블릿 앱 클론 - DB 스키마 v4
 // Stack: Prisma 7 + MySQL 8
 // 본사(HQ) + 매장(Store) 2계층 관리 구조
+// + 로그인/인증 시스템
 // ============================================
 
 generator client {
@@ -27,8 +28,9 @@ enum AdminRole {
 /// 관리자 계정
 model AdminUser {
   id        Int       @id @default(autoincrement())
-  email     String    @unique @db.VarChar(100)
-  password  String    @db.VarChar(255) // bcrypt 해시
+  loginId   String    @unique @db.VarChar(50)  // 로그인 ID ("hq", "suwon" 등)
+  email     String?   @db.VarChar(100)          // 이메일 (선택)
+  password  String    @db.VarChar(255)          // bcrypt 해시
   name      String    @db.VarChar(50)
   role      AdminRole @default(STORE_STAFF)
   storeId   Int?      // null = 본사, 값 있으면 해당 매장 소속
@@ -57,6 +59,7 @@ model Store {
   wifiPw       String?  @db.VarChar(50)  // "red2563799"
   openTime     String?  @db.VarChar(10)  // "10:00"
   closeTime    String?  @db.VarChar(10)  // "23:00"
+  storeCode    String   @db.VarChar(5)   @default("") // 매장 접두사 ("SW", "GN", "HD")
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -77,7 +80,8 @@ model Table {
   storeId  Int
   tableNo  String  @db.VarChar(10)
   seats    Int     @default(4)
-  isActive Boolean @default(true)
+  setupCode String? @db.VarChar(10)  // 태블릿 설정 코드 ("SWS31A")
+  isActive  Boolean @default(true)
 
   store    Store          @relation(fields: [storeId], references: [id], onDelete: Cascade)
   orders   Order[]
@@ -211,12 +215,11 @@ model GameHashtag {
 // ============================================
 
 /// 매장별 게임 보유 & 노출 설정
-/// 본사 Game 마스터에서 "우리 매장에 있는 게임"을 체크
 model StoreGame {
   storeId       Int
   gameId        Int
-  isVisible     Boolean @default(true)  // 태블릿 노출 여부
-  shelfLocation String? @db.VarChar(20) // 매장별 진열 위치 오버라이드 (null이면 Game.defaultShelfLoc)
+  isVisible     Boolean @default(true)
+  shelfLocation String? @db.VarChar(20)
   createdAt     DateTime @default(now())
 
   store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
@@ -269,7 +272,7 @@ model Menu {
   basePrice    Int
   isNew        Boolean  @default(false)
   isBest       Boolean  @default(false)
-  isActive     Boolean  @default(true)  // 본사 레벨 활성화
+  isActive     Boolean  @default(true)
   displayOrder Int      @default(0)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -318,12 +321,11 @@ model MenuOption {
 // ============================================
 
 /// 매장별 메뉴 판매 & 가격 설정
-/// 매장에서 품절 토글, 가격 오버라이드 가능
 model StoreMenu {
   storeId       Int
   menuId        Int
-  isAvailable   Boolean @default(true)  // 판매중/품절
-  priceOverride Int?                    // null이면 Menu.basePrice 사용
+  isAvailable   Boolean @default(true)
+  priceOverride Int?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

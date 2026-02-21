@@ -1,16 +1,16 @@
 import { getStore, getChatMessages } from "@/lib/queries";
+import { requireTableSession } from "@/lib/auth";
 import ChatClient, { type ChatMsg } from "./ChatClient";
 
-const STORE_ID = 1;
-const TABLE_NO = "31";
-
 export default async function ChatPage() {
+  const { storeId, tableNo } = await requireTableSession();
+
   const [store, dbMessages] = await Promise.all([
-    getStore(STORE_ID),
-    getChatMessages(STORE_ID, TABLE_NO),
+    getStore(storeId),
+    getChatMessages(storeId, tableNo),
   ]);
 
-  const storeName = `레드버튼 ${store?.name ?? "수원점"}`;
+  const storeName = `레드버튼 ${store?.name ?? ""}`;
 
   const initialMessages: ChatMsg[] = dbMessages.map((m) => ({
     id: m.id,

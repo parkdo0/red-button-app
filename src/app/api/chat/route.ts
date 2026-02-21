@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getApiSession } from "@/lib/auth";
 
 /**
  * GET /api/chat?storeId=1&tableNo=31
@@ -7,6 +8,11 @@ import { prisma } from "@/lib/prisma";
  */
 export async function GET(request: NextRequest) {
   try {
+    const session = await getApiSession(request);
+    if (!session) {
+      return NextResponse.json({ error: "인증이 필요합니다." }, { status: 401 });
+    }
+
     const storeId = Number(request.nextUrl.searchParams.get("storeId"));
     const tableNo = request.nextUrl.searchParams.get("tableNo") ?? "";
 
@@ -32,6 +38,11 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    const session = await getApiSession(request);
+    if (!session) {
+      return NextResponse.json({ error: "인증이 필요합니다." }, { status: 401 });
+    }
+
     const body = await request.json();
     const { storeId, tableNo, sender, message } = body;
 

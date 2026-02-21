@@ -1,4 +1,5 @@
 import { getRecommendCategories } from "@/lib/queries";
+import { requireTableSession } from "@/lib/auth";
 import GameCategoryRow from "@/components/GameCategoryRow";
 import type { GameCategory } from "@/data/constants";
 
@@ -6,12 +7,9 @@ import type { GameCategory } from "@/data/constants";
  * 추천 게임 홈 - Server Component
  * DB에서 추천 카테고리 + 게임 목록 조회
  */
-
-// 현재 매장 ID (추후 세션/쿠키에서 동적으로)
-const STORE_ID = 1;
-
 export default async function HomePage() {
-  const categories = await getRecommendCategories(STORE_ID);
+  const { storeId } = await requireTableSession();
+  const categories = await getRecommendCategories(storeId);
 
   return (
     <div className="h-full overflow-y-auto scrollbar-thin">

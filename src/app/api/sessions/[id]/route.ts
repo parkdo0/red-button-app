@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getApiSession } from "@/lib/auth";
 
 /**
  * PATCH /api/sessions/:id
@@ -10,6 +11,11 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const authSession = await getApiSession(request);
+    if (!authSession) {
+      return NextResponse.json({ error: "인증이 필요합니다." }, { status: 401 });
+    }
+
     const { id } = await params;
     const sessionId = Number(id);
     if (isNaN(sessionId)) {

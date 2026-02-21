@@ -1,4 +1,5 @@
 import { getOrdersByTable } from "@/lib/queries";
+import { requireTableSession } from "@/lib/auth";
 import {
   ORDER_STATUS_LABEL,
   ORDER_STATUS_COLOR,
@@ -6,14 +7,12 @@ import {
 import { formatPrice } from "@/data/constants";
 import Link from "next/link";
 
-const STORE_ID = 1;
-const TABLE_NO = "31";
-
 /**
  * 주문 내역 페이지 - Server Component (DB 연결)
  */
 export default async function OrderHistoryPage() {
-  const orders = await getOrdersByTable(STORE_ID, TABLE_NO);
+  const { storeId, tableNo } = await requireTableSession();
+  const orders = await getOrdersByTable(storeId, tableNo);
 
   return (
     <div className="h-full overflow-y-auto scrollbar-thin px-6 py-6 md:px-8">
@@ -21,7 +20,7 @@ export default async function OrderHistoryPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-extrabold text-text-primary tracking-tight">주문 내역</h1>
-          <p className="mt-1 text-sm text-text-muted">{TABLE_NO}번 테이블</p>
+          <p className="mt-1 text-sm text-text-muted">{tableNo}번 테이블</p>
         </div>
         <Link href="/order" className="rb-btn-primary px-5 py-2.5 text-sm touch-feedback">
           + 추가 주문

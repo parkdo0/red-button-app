@@ -4,6 +4,7 @@ import "./globals.css";
 import Navigation from "@/components/Navigation";
 import { ToastProvider } from "@/components/ToastProvider";
 import { CartProvider } from "@/components/cart/CartProvider";
+import { SessionProvider } from "@/components/SessionProvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -37,12 +38,14 @@ export default function RootLayout({
   return (
     <html lang="ko" className={inter.variable}>
       <body className="flex h-dvh w-dvw overflow-hidden font-sans">
-        <ToastProvider>
-          <CartProvider>
-            <Navigation />
-            <main className="flex-1 overflow-hidden">{children}</main>
-          </CartProvider>
-        </ToastProvider>
+        <SessionProvider>
+          <ToastProvider>
+            <CartProvider>
+              <Navigation />
+              <main className="flex-1 overflow-hidden">{children}</main>
+            </CartProvider>
+          </ToastProvider>
+        </SessionProvider>
       </body>
     </html>
   );

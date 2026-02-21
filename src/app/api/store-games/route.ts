@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getApiSession } from "@/lib/auth";
 
 /**
  * GET /api/store-games?storeId=1
@@ -7,6 +8,11 @@ import { prisma } from "@/lib/prisma";
  */
 export async function GET(request: NextRequest) {
   try {
+    const session = await getApiSession(request);
+    if (!session) {
+      return NextResponse.json({ error: "인증이 필요합니다." }, { status: 401 });
+    }
+
     const storeId = Number(request.nextUrl.searchParams.get("storeId"));
     if (!storeId) {
       return NextResponse.json({ error: "storeId는 필수입니다." }, { status: 400 });
@@ -53,6 +59,11 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    const session = await getApiSession(request);
+    if (!session) {
+      return NextResponse.json({ error: "인증이 필요합니다." }, { status: 401 });
+    }
+
     const body = await request.json();
     const { gameId, storeId, isVisible, shelfLocation } = body;
 
@@ -87,6 +98,11 @@ export async function POST(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
   try {
+    const session = await getApiSession(request);
+    if (!session) {
+      return NextResponse.json({ error: "인증이 필요합니다." }, { status: 401 });
+    }
+
     const storeId = Number(request.nextUrl.searchParams.get("storeId"));
     const gameId = Number(request.nextUrl.searchParams.get("gameId"));
 

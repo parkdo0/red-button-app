@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { formatPrice } from "@/data/constants";
+import { useSession } from "@/components/SessionProvider";
 
 interface StoreMenuItem {
   id: number;
@@ -22,19 +23,21 @@ interface StoreMenuItem {
  * 품절 토글 + 가격 오버라이드
  */
 export default function StoreMenusPage() {
+  const session = useSession();
   const [menus, setMenus] = useState<StoreMenuItem[]>([]);
   const [activeTab, setActiveTab] = useState("전체");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const fetchMenus = () => {
-    fetch("/api/store-menus?storeId=1")
+  const fetchMenus = useCallback(() => {
+    if (!session?.storeId) return;
+    fetch(`/api/store-menus?storeId=${session.storeId}`)
       .then((r) => r.json())
       .then((data) => { setMenus(Array.isArray(data) ? data : []); setLoading(false); })
       .catch(() => setLoading(false));
-  };
+  }, [session?.storeId]);
 
-  useEffect(() => { fetchMenus(); }, []);
+  useEffect(() => { fetchMenus(); }, [fetchMenus]);
 
   /** 카테고리 탭 목록 (동적) */
   const tabs = useMemo(() => {
@@ -57,7 +60,7 @@ export default function StoreMenusPage() {
     await fetch("/api/store-menus", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ storeId: 1, menuId: menu.id, isAvailable: newAvail }),
+      body: JSON.stringify({ storeId: session?.storeId, menuId: menu.id, isAvailable: newAvail }),
     });
   };
 
@@ -70,7 +73,7 @@ export default function StoreMenusPage() {
       await fetch("/api/store-menus", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ storeId: 1, menuId: menu.id, priceOverride: override }),
+        body: JSON.stringify({ storeId: session?.storeId, menuId: menu.id, priceOverride: override }),
       });
     }
   };
@@ -81,7 +84,7 @@ export default function StoreMenusPage() {
     await fetch("/api/store-menus", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ storeId: 1, menuId: menu.id, priceOverride: null }),
+      body: JSON.stringify({ storeId: session?.storeId, menuId: menu.id, priceOverride: null }),
     });
   };
 

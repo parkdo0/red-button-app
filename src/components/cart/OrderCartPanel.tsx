@@ -8,6 +8,7 @@ import { ORDER_STATUS_LABEL } from "@/data/order-constants";
 import OrderConfirmModal from "@/components/cart/OrderConfirmModal";
 import { orderApi } from "@/lib/api";
 import type { CreateOrderRequest } from "@/types/api";
+import { useSession } from "@/components/SessionProvider";
 
 type PanelTab = "cart" | "history";
 
@@ -25,13 +26,15 @@ export default function OrderCartPanel() {
   const { items, totalPrice, totalCount, updateQuantity, removeItem, clearCart } = useCart();
   const { showToast } = useToast();
 
+  const session = useSession();
+
   const handleConfirmOrder = async () => {
     if (isOrdering) return;
     setIsOrdering(true);
 
     const body: CreateOrderRequest = {
-      storeId: 1,
-      tableId: 1,
+      storeId: session?.storeId ?? 1,
+      tableId: session?.tableId ?? 1,
       items: items.map((item) => ({
         menuId: item.menuId,
         quantity: item.quantity,
@@ -252,15 +255,17 @@ interface ApiOrder {
 }
 
 function HistoryContent() {
+  const session = useSession();
   const [orders, setOrders] = useState<ApiOrder[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/orders?storeId=1&tableId=1")
+    if (!session?.storeId || !session?.tableId) return;
+    fetch(`/api/orders?storeId=${session.storeId}&tableId=${session.tableId}`)
       .then((r) => r.json())
       .then((data) => { setOrders(data); setLoading(false); })
       .catch(() => setLoading(false));
-  }, []);
+  }, [session?.storeId, session?.tableId]);
 
   if (loading) {
     return (

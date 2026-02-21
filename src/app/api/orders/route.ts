@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getApiSession } from "@/lib/auth";
 
 /** 주문 생성 요청 바디 타입 */
 interface OrderItemRequest {
@@ -21,12 +22,20 @@ interface CreateOrderRequest {
  */
 export async function POST(request: NextRequest) {
   try {
+    const session = await getApiSession(request);
+    if (!session) {
+      return NextResponse.json({ error: "인증이 필요합니다." }, { status: 401 });
+    }
+
     const body: CreateOrderRequest = await request.json();
 
-    // 유효성 검사
-    if (!body.storeId || !body.tableId || !body.items?.length) {
+    // 세션에서 storeId/tableId 추출 (클라이언트 값 무시)
+    const storeId = session.storeId!;
+    const tableId = session.tableId!;
+
+    if (!body.items?.length) {
       return NextResponse.json(
-        { error: "storeId, tableId, items는 필수입니다." },
+        { error: "주문 항목이 필요합니다." },
         { status: 400 }
       );
     }
@@ -38,8 +47,8 @@ export async function POST(request: NextRequest) {
       // 1. 주문 생성 (빈 상태)
       const newOrder = await tx.order.create({
         data: {
-          storeId: body.storeId,
-          tableId: body.tableId,
+          storeId,
+          tableId,
           memo: body.memo ?? null,
           totalPrice: 0,
         },
@@ -128,6 +137,11 @@ export async function POST(request: NextRequest) {
  */
 export async function GET(request: NextRequest) {
   try {
+    const session = await getApiSession(request);
+    if (!session) {
+      return NextResponse.json({ error: "인증이 필요합니다." }, { status: 401 });
+    }
+
     const { searchParams } = request.nextUrl;
     const storeId = searchParams.get("storeId");
     const tableId = searchParams.get("tableId");

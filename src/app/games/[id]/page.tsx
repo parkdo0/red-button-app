@@ -1,11 +1,10 @@
 import { DIFFICULTY_LABEL, type Game } from "@/data/constants";
 import type { Difficulty } from "@prisma/client";
 import { getGame, searchGames } from "@/lib/queries";
+import { requireTableSession } from "@/lib/auth";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import YoutubePlayer from "@/components/YoutubePlayer";
-
-const STORE_ID = 1;
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -33,15 +32,16 @@ function getGenres(game: Game): string[] {
  * 유튜브 영상 + 게임 정보 + 관련 게임 추천
  */
 export default async function GameDetailPage({ params }: Props) {
+  const { storeId } = await requireTableSession();
   const { id } = await params;
-  const game = await getGame(Number(id), STORE_ID);
+  const game = await getGame(Number(id), storeId);
 
   if (!game) notFound();
 
   const genres = getGenres(game as Game);
 
   // 태그 기반 유사 게임 추천 - 같은 장르 게임 조회
-  const allGames = await searchGames(STORE_ID, { genres: genres.slice(0, 2) });
+  const allGames = await searchGames(storeId, { genres: genres.slice(0, 2) });
   const similarGames = allGames.filter((g) => g.id !== game.id).slice(0, 4);
 
   return (

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession } from "@/components/SessionProvider";
 
 /**
  * 관리자 공통 레이아웃
@@ -98,6 +99,7 @@ function HQNav({ pathname }: { pathname: string }) {
 // 매장 네비게이션
 // ──────────────────────────────────────
 function StoreNav({ pathname }: { pathname: string }) {
+  const session = useSession();
   const items = [
     { href: "/admin/store", label: "대시보드", icon: "📊", exact: true },
     { href: "/admin/store/orders", label: "주문 관리", icon: "📋" },
@@ -113,7 +115,7 @@ function StoreNav({ pathname }: { pathname: string }) {
       {/* 매장 선택 */}
       <div className="mb-3 rounded-lg bg-gray-50 px-3 py-2">
         <p className="text-[10px] text-gray-400">현재 매장</p>
-        <p className="text-sm font-bold text-gray-900">수원점</p>
+        <p className="text-sm font-bold text-gray-900">{session?.storeName ?? ""}</p>
       </div>
       <NavList items={items} pathname={pathname} />
     </>

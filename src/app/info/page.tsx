@@ -1,13 +1,13 @@
 import { getStore, getActiveSession } from "@/lib/queries";
+import { requireTableSession } from "@/lib/auth";
 import InfoClient from "./InfoClient";
 
-const STORE_ID = 1;
-const TABLE_NO = "31";
-
 export default async function InfoPage() {
+  const { storeId, tableNo } = await requireTableSession();
+
   const [store, session] = await Promise.all([
-    getStore(STORE_ID),
-    getActiveSession(STORE_ID, TABLE_NO),
+    getStore(storeId),
+    getActiveSession(storeId, tableNo),
   ]);
 
   const checkInAt = session?.checkInAt ?? new Date();
@@ -20,8 +20,8 @@ export default async function InfoPage() {
 
   return (
     <InfoClient
-      storeName={store?.name ?? "수원점"}
-      tableNo={TABLE_NO}
+      storeName={store?.name ?? ""}
+      tableNo={tableNo}
       wifiId={store?.wifiId ?? "redbutton"}
       wifiPw={store?.wifiPw ?? "red2563799"}
       checkInTime={checkInTime}

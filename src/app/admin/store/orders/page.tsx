@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { formatPrice } from "@/data/constants";
 import { ADMIN_ORDER_STATUS_LABEL, ADMIN_ORDER_STATUS_COLOR, ORDER_STATUS_FLOW } from "@/data/admin-constants";
+import { useSession } from "@/components/SessionProvider";
 
 interface OrderItem {
   menuName: string;
@@ -28,12 +29,14 @@ const STATUS_COLUMNS: string[] = ["PENDING", "CONFIRMED", "PREPARING", "COMPLETE
  * 칸반 보드 스타일 (상태별 컬럼)
  */
 export default function StoreOrdersPage() {
+  const session = useSession();
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchOrders = useCallback(() => {
-    fetch("/api/orders?storeId=1")
+    if (!session?.storeId) return;
+    fetch(`/api/orders?storeId=${session.storeId}`)
       .then((r) => r.json())
       .then((data) => {
         const mapped = (Array.isArray(data) ? data : []).map((o: Record<string, unknown>) => ({
@@ -53,7 +56,7 @@ export default function StoreOrdersPage() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, []);
+  }, [session?.storeId]);
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
 

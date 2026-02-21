@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { DIFFICULTY_LABEL, type Difficulty } from "@/data/constants";
+import { useSession } from "@/components/SessionProvider";
 
 interface StoreGameItem {
   id: number;
@@ -21,19 +22,21 @@ interface StoreGameItem {
  * 매장 > 게임 노출 관리
  */
 export default function StoreGamesPage() {
+  const session = useSession();
   const [games, setGames] = useState<StoreGameItem[]>([]);
   const [search, setSearch] = useState("");
   const [filterMode, setFilterMode] = useState<"all" | "owned" | "unowned">("all");
   const [loading, setLoading] = useState(true);
 
-  const fetchGames = () => {
-    fetch("/api/store-games?storeId=1")
+  const fetchGames = useCallback(() => {
+    if (!session?.storeId) return;
+    fetch(`/api/store-games?storeId=${session.storeId}`)
       .then((r) => r.json())
       .then((data) => { setGames(Array.isArray(data) ? data : []); setLoading(false); })
       .catch(() => setLoading(false));
-  };
+  }, [session?.storeId]);
 
-  useEffect(() => { fetchGames(); }, []);
+  useEffect(() => { fetchGames(); }, [fetchGames]);
 
   const filtered = useMemo(() => {
     return games.filter((g) => {
@@ -49,12 +52,12 @@ export default function StoreGamesPage() {
   /** 보유 토글 */
   const toggleOwnership = async (game: StoreGameItem) => {
     if (game.hasStoreConfig) {
-      await fetch(`/api/store-games?storeId=1&gameId=${game.id}`, { method: "DELETE" });
+      await fetch(`/api/store-games?storeId=${session?.storeId}&gameId=${game.id}`, { method: "DELETE" });
     } else {
       await fetch("/api/store-games", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ storeId: 1, gameId: game.id, isVisible: true, shelfLocation: "" }),
+        body: JSON.stringify({ storeId: session?.storeId, gameId: game.id, isVisible: true, shelfLocation: "" }),
       });
     }
     fetchGames();
@@ -65,7 +68,7 @@ export default function StoreGamesPage() {
     await fetch("/api/store-games", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ storeId: 1, gameId: game.id, isVisible: !game.isVisible }),
+      body: JSON.stringify({ storeId: session?.storeId, gameId: game.id, isVisible: !game.isVisible }),
     });
     setGames((prev) => prev.map((g) => g.id === game.id ? { ...g, isVisible: !g.isVisible } : g));
   };
@@ -76,7 +79,7 @@ export default function StoreGamesPage() {
     await fetch("/api/store-games", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ storeId: 1, gameId: game.id, shelfLocation: loc }),
+      body: JSON.stringify({ storeId: session?.storeId, gameId: game.id, shelfLocation: loc }),
     });
   };
 

@@ -4,6 +4,7 @@
  */
 import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
@@ -45,28 +46,28 @@ async function main() {
       data: {
         id: 1, name: "수원점", address: "경기도 수원시 팔달구 인계로 123",
         phone: "031-123-4567", wifiId: "redbutton", wifiPw: "red2563799",
-        openTime: "10:00", closeTime: "23:00", isActive: true,
+        openTime: "10:00", closeTime: "23:00", storeCode: "SW", isActive: true,
       },
     }),
     prisma.store.create({
       data: {
         id: 2, name: "강남점", address: "서울특별시 강남구 테헤란로 456",
         phone: "02-234-5678", wifiId: "redbutton", wifiPw: "red1234567",
-        openTime: "10:00", closeTime: "24:00", isActive: true,
+        openTime: "10:00", closeTime: "24:00", storeCode: "GN", isActive: true,
       },
     }),
     prisma.store.create({
       data: {
         id: 3, name: "홍대점", address: "서울특별시 마포구 와우산로 789",
         phone: "02-345-6789", wifiId: "redbutton", wifiPw: "red9876543",
-        openTime: "11:00", closeTime: "24:00", isActive: true,
+        openTime: "11:00", closeTime: "24:00", storeCode: "HD", isActive: true,
       },
     }),
     prisma.store.create({
       data: {
         id: 4, name: "부산서면점", address: "부산광역시 부산진구 서면로 321",
         phone: "051-456-7890", wifiId: "redbutton", wifiPw: "red5555555",
-        openTime: "10:00", closeTime: "23:00", isActive: false,
+        openTime: "10:00", closeTime: "23:00", storeCode: "BS", isActive: false,
       },
     }),
   ]);
@@ -76,38 +77,47 @@ async function main() {
   // 2. 관리자 계정 (Admin Users)
   // ============================================
   console.log("👤 Creating admin users...");
+  const adminPw = await bcrypt.hash("admin1234", 10);
+  const storePw = await bcrypt.hash("store1234", 10);
+  const staffPw = await bcrypt.hash("staff1234", 10);
   await prisma.adminUser.createMany({
     data: [
-      { id: 1, email: "admin@redbutton.co.kr", password: "$2b$10$dummy_hash_hq_admin", name: "김본사", role: "HQ_ADMIN", storeId: null, isActive: true },
-      { id: 2, email: "suwon@redbutton.co.kr", password: "$2b$10$dummy_hash_suwon", name: "이수원", role: "STORE_MANAGER", storeId: 1, isActive: true },
-      { id: 3, email: "gangnam@redbutton.co.kr", password: "$2b$10$dummy_hash_gangnam", name: "박강남", role: "STORE_MANAGER", storeId: 2, isActive: true },
-      { id: 4, email: "hongdae@redbutton.co.kr", password: "$2b$10$dummy_hash_hongdae", name: "최홍대", role: "STORE_MANAGER", storeId: 3, isActive: true },
-      { id: 5, email: "staff1@redbutton.co.kr", password: "$2b$10$dummy_hash_staff1", name: "정직원", role: "STORE_STAFF", storeId: 1, isActive: true },
+      { id: 1, loginId: "hq", email: "admin@redbutton.co.kr", password: adminPw, name: "김본사", role: "HQ_ADMIN", storeId: null, isActive: true },
+      { id: 2, loginId: "suwon", email: "suwon@redbutton.co.kr", password: storePw, name: "이수원", role: "STORE_MANAGER", storeId: 1, isActive: true },
+      { id: 3, loginId: "gangnam", email: "gangnam@redbutton.co.kr", password: storePw, name: "박강남", role: "STORE_MANAGER", storeId: 2, isActive: true },
+      { id: 4, loginId: "hongdae", email: "hongdae@redbutton.co.kr", password: storePw, name: "최홍대", role: "STORE_MANAGER", storeId: 3, isActive: true },
+      { id: 5, loginId: "staff1", email: "staff1@redbutton.co.kr", password: staffPw, name: "정직원", role: "STORE_STAFF", storeId: 1, isActive: true },
     ],
   });
-  console.log("  ✅ 5 admin users created");
+  console.log("  ✅ 5 admin users created (hq/admin1234, suwon/store1234, gangnam/store1234, hongdae/store1234, staff1/staff1234)");
 
   // ============================================
   // 3. 테이블 (수원점 35석)
   // ============================================
   console.log("🪑 Creating tables...");
+
+  // setupCode 생성 헬퍼: 매장코드 + 테이블번호 패딩 + 랜덤 2자리 (개발용은 고정 "AA")
+  const makeSetupCode = (storeCode: string, tableNo: number) =>
+    `${storeCode}${String(tableNo).padStart(2, "0")}AA`;
+
   const tableData = Array.from({ length: 35 }, (_, i) => ({
     storeId: 1,
     tableNo: String(i + 1),
     seats: (i + 1) % 5 === 0 ? 6 : 4,
+    setupCode: makeSetupCode("SW", i + 1),
     isActive: true,
   }));
   // 강남점 40석
   for (let i = 0; i < 40; i++) {
-    tableData.push({ storeId: 2, tableNo: String(i + 1), seats: i % 4 === 0 ? 6 : 4, isActive: true });
+    tableData.push({ storeId: 2, tableNo: String(i + 1), seats: i % 4 === 0 ? 6 : 4, setupCode: makeSetupCode("GN", i + 1), isActive: true });
   }
   // 홍대점 30석
   for (let i = 0; i < 30; i++) {
-    tableData.push({ storeId: 3, tableNo: String(i + 1), seats: 4, isActive: true });
+    tableData.push({ storeId: 3, tableNo: String(i + 1), seats: 4, setupCode: makeSetupCode("HD", i + 1), isActive: true });
   }
   // 부산점 25석
   for (let i = 0; i < 25; i++) {
-    tableData.push({ storeId: 4, tableNo: String(i + 1), seats: 4, isActive: true });
+    tableData.push({ storeId: 4, tableNo: String(i + 1), seats: 4, setupCode: makeSetupCode("BS", i + 1), isActive: true });
   }
   await prisma.table.createMany({ data: tableData });
   console.log(`  ✅ ${tableData.length} tables created`);

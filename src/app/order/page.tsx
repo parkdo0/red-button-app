@@ -1,10 +1,10 @@
 import { getMenus } from "@/lib/queries";
+import { requireTableSession } from "@/lib/auth";
 import OrderClient from "./OrderClient";
 import type { MenuItem } from "@/data/constants";
 
-const STORE_ID = 1;
-
 export default async function OrderPage() {
-  const menus = await getMenus(STORE_ID);
+  const { storeId } = await requireTableSession();
+  const menus = await getMenus(storeId);
   return <OrderClient menus={menus as MenuItem[]} />;
 }

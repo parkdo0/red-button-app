@@ -1,22 +1,46 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSession } from "@/components/SessionProvider";
 
 /**
  * 매장 > 설정
  * Wi-Fi, 영업시간, 매장 기본 정보 관리
  */
 export default function StoreSettingsPage() {
+  const session = useSession();
   const [form, setForm] = useState({
-    name: "수원점",
-    address: "경기도 수원시 팔달구 인계로 123",
-    phone: "031-123-4567",
-    wifiId: "redbutton",
-    wifiPw: "red2563799",
+    name: "",
+    address: "",
+    phone: "",
+    wifiId: "",
+    wifiPw: "",
     openTime: "10:00",
     closeTime: "23:00",
   });
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!session?.storeId) return;
+    fetch(`/api/stores/${session.storeId}`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data) {
+          setForm({
+            name: data.name ?? "",
+            address: data.address ?? "",
+            phone: data.phone ?? "",
+            wifiId: data.wifiId ?? "",
+            wifiPw: data.wifiPw ?? "",
+            openTime: data.openTime ?? "10:00",
+            closeTime: data.closeTime ?? "23:00",
+          });
+        }
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [session?.storeId]);
 
   const update = <K extends keyof typeof form>(key: K, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getApiSession } from "@/lib/auth";
 
 /**
  * POST /api/sessions
@@ -7,6 +8,11 @@ import { prisma } from "@/lib/prisma";
  */
 export async function POST(request: NextRequest) {
   try {
+    const session = await getApiSession(request);
+    if (!session) {
+      return NextResponse.json({ error: "인증이 필요합니다." }, { status: 401 });
+    }
+
     const body = await request.json();
     const { storeId, tableId, guestCount } = body;
 
@@ -26,7 +32,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const session = await prisma.tableSession.create({
+    const tableSession = await prisma.tableSession.create({
       data: {
         storeId,
         tableId,
@@ -34,7 +40,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json(session, { status: 201 });
+    return NextResponse.json(tableSession, { status: 201 });
   } catch (error) {
     console.error("체크인 실패:", error);
     return NextResponse.json({ error: "체크인에 실패했습니다." }, { status: 500 });

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { formatPrice } from "@/data/constants";
 import { ADMIN_ORDER_STATUS_LABEL, ADMIN_ORDER_STATUS_COLOR } from "@/data/admin-constants";
+import { useSession } from "@/components/SessionProvider";
 
 interface DashboardData {
   pendingOrders: number;
@@ -34,15 +35,17 @@ interface DashboardData {
  * 매장 대시보드 - 오늘의 운영 현황 한눈에
  */
 export default function StoreDashboardPage() {
+  const session = useSession();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/dashboard/store?storeId=1")
+    if (!session?.storeId) return;
+    fetch(`/api/dashboard/store?storeId=${session.storeId}`)
       .then((r) => r.json())
       .then((d) => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));
-  }, []);
+  }, [session?.storeId]);
 
   if (loading) {
     return (
@@ -67,7 +70,7 @@ export default function StoreDashboardPage() {
       <div className="mx-auto max-w-6xl px-6 py-6">
         {/* 헤더 */}
         <div className="mb-6">
-          <h1 className="text-xl font-bold text-gray-900">수원점 대시보드</h1>
+          <h1 className="text-xl font-bold text-gray-900">{session?.storeName ?? ""} 대시보드</h1>
           <p className="mt-1 text-sm text-gray-500">
             {new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", weekday: "long" })}
           </p>
