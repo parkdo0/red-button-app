@@ -1,11 +1,19 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { FILTER_OPTIONS, DIFFICULTY_LABEL, type Game, type Difficulty } from "@/data/constants";
+import { DIFFICULTY_LABEL, type Game, type Difficulty } from "@/data/constants";
 import GameSearchCard from "@/components/GameSearchCard";
+
+/** DB에서 로드한 필터 옵션 */
+interface FilterOptionsFromDB {
+  genre: string[];
+  playerCount: string[];
+  playTime: string[];
+}
 
 interface Props {
   initialGames: Game[];
+  filterOptions: FilterOptionsFromDB;
 }
 
 interface FilterState {
@@ -21,6 +29,9 @@ const EMPTY_FILTER: FilterState = {
   difficulty: new Set(),
   playTime: new Set(),
 };
+
+/** 난이도는 enum 고정 */
+const DIFFICULTY_OPTIONS: Difficulty[] = ["VERY_EASY", "EASY", "NORMAL", "SEMI_HARD", "HARD", "EXTREME"];
 
 const CHO_SUNG = ["ㄱ","ㄲ","ㄴ","ㄷ","ㄸ","ㄹ","ㅁ","ㅂ","ㅃ","ㅅ","ㅆ","ㅇ","ㅈ","ㅉ","ㅊ","ㅋ","ㅌ","ㅍ","ㅎ"];
 
@@ -54,7 +65,7 @@ function filterGames(games: Game[], filters: FilterState, search: string): Game[
   });
 }
 
-export default function SearchClient({ initialGames }: Props) {
+export default function SearchClient({ initialGames, filterOptions }: Props) {
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<FilterState>(EMPTY_FILTER);
 
@@ -101,13 +112,13 @@ export default function SearchClient({ initialGames }: Props) {
 
         {!isSearchActive ? (
           <div className="px-6 pb-8 md:px-8">
-            <FilterSection filters={filters} onToggle={toggle} onClear={clearAll} hasAnyFilter={hasAnyFilter} />
+            <FilterSection filters={filters} onToggle={toggle} onClear={clearAll} hasAnyFilter={hasAnyFilter} filterOptions={filterOptions} />
           </div>
         ) : (
           <div className="px-6 pb-8 md:px-8">
             <div className="flex items-center gap-2 mb-4">
               <span className="text-xs font-semibold text-text-muted mr-1">게임 시간</span>
-              {FILTER_OPTIONS.playTime.map((opt) => (
+              {filterOptions.playTime.map((opt) => (
                 <button key={opt} onClick={() => toggle("playTime", opt)} className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all touch-feedback ${filters.playTime.has(opt) ? "bg-red-primary text-white" : "bg-bg-card text-text-muted border border-border-default hover:border-border-hover"}`}>
                   {opt}
                 </button>
@@ -148,13 +159,13 @@ export default function SearchClient({ initialGames }: Props) {
 
 // ── Filter UI Components ──
 
-function FilterSection({ filters, onToggle, onClear, hasAnyFilter }: { filters: FilterState; onToggle: (g: keyof FilterState, v: string) => void; onClear: () => void; hasAnyFilter: boolean }) {
+function FilterSection({ filters, onToggle, onClear, hasAnyFilter, filterOptions }: { filters: FilterState; onToggle: (g: keyof FilterState, v: string) => void; onClear: () => void; hasAnyFilter: boolean; filterOptions: FilterOptionsFromDB }) {
   return (
     <div className="flex flex-col gap-6">
-      <FilterGroup label="장르/테마" options={[...FILTER_OPTIONS.genre]} selected={filters.genre} onToggle={(v) => onToggle("genre", v)} />
-      <FilterGroup label="인원수" options={[...FILTER_OPTIONS.playerCount]} selected={filters.playerCount} onToggle={(v) => onToggle("playerCount", v)} />
-      <FilterGroup label="난이도" options={[...FILTER_OPTIONS.difficulty]} selected={filters.difficulty} onToggle={(v) => onToggle("difficulty", v)} renderLabel={(v) => DIFFICULTY_LABEL[v as Difficulty] ?? v} />
-      <FilterGroup label="게임 시간" options={[...FILTER_OPTIONS.playTime]} selected={filters.playTime} onToggle={(v) => onToggle("playTime", v)} />
+      <FilterGroup label="장르/테마" options={filterOptions.genre} selected={filters.genre} onToggle={(v) => onToggle("genre", v)} />
+      <FilterGroup label="인원수" options={filterOptions.playerCount} selected={filters.playerCount} onToggle={(v) => onToggle("playerCount", v)} />
+      <FilterGroup label="난이도" options={DIFFICULTY_OPTIONS} selected={filters.difficulty} onToggle={(v) => onToggle("difficulty", v)} renderLabel={(v) => DIFFICULTY_LABEL[v as Difficulty] ?? v} />
+      <FilterGroup label="게임 시간" options={filterOptions.playTime} selected={filters.playTime} onToggle={(v) => onToggle("playTime", v)} />
       {hasAnyFilter && (
         <div className="flex gap-3 pt-2">
           <button onClick={onClear} className="flex-1 rounded-xl border border-border-default py-2.5 text-sm font-medium text-text-muted hover:text-text-primary transition-colors touch-feedback">초기화</button>

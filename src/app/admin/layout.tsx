@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useSession } from "@/components/SessionProvider";
+import { useSession, SessionContext } from "@/components/SessionProvider";
+import { useState, useEffect, useCallback } from "react";
 
 /**
  * 관리자 공통 레이아웃
@@ -10,8 +11,34 @@ import { useSession } from "@/components/SessionProvider";
  */
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const session = useSession();
   const isHQ = pathname.startsWith("/admin/hq");
   const isStore = pathname.startsWith("/admin/store");
+
+  // HQ_ADMIN이 매장 탭을 볼 때 사용할 매장 선택 상태
+  const [selectedStore, setSelectedStore] = useState<{ id: number; name: string } | null>(null);
+
+  // HQ_ADMIN이 매장 탭에 있을 때, 선택한 매장으로 세션 오버라이드
+  const isHQInStoreMode = isStore && session?.role === "HQ_ADMIN";
+  const effectiveSession = isHQInStoreMode && selectedStore
+    ? { ...session, storeId: selectedStore.id, storeName: selectedStore.name }
+    : session;
+
+  // 콘텐츠 렌더링: HQ_ADMIN이 매장 탭인데 매장 미선택 → 안내 표시
+  const renderContent = () => {
+    if (isHQInStoreMode && !selectedStore) {
+      return (
+        <div className="flex h-full items-center justify-center text-gray-400">
+          <div className="text-center">
+            <p className="text-4xl mb-4">🏪</p>
+            <p className="text-lg font-bold text-gray-600 mb-2">매장을 선택해주세요</p>
+            <p className="text-sm">좌측 사이드바에서 관리할 매장을 선택하세요</p>
+          </div>
+        </div>
+      );
+    }
+    return children;
+  };
 
   return (
     <div className="flex h-dvh w-dvw overflow-hidden bg-gray-50">
@@ -53,7 +80,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {isHQ || (!isHQ && !isStore) ? (
             <HQNav pathname={pathname} />
           ) : (
-            <StoreNav pathname={pathname} />
+            <StoreNav
+              pathname={pathname}
+              isHQAdmin={session?.role === "HQ_ADMIN"}
+              selectedStore={selectedStore}
+              onSelectStore={setSelectedStore}
+            />
           )}
         </nav>
 
@@ -72,8 +104,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </aside>
 
-      {/* 메인 콘텐츠 */}
-      <main className="flex-1 overflow-hidden">{children}</main>
+      {/* 메인 콘텐츠 — HQ_ADMIN일 때 선택한 매장으로 세션 오버라이드 */}
+      <main className="flex-1 overflow-hidden">
+        {isHQInStoreMode ? (
+          <SessionContext.Provider value={effectiveSession}>
+            {renderContent()}
+          </SessionContext.Provider>
+        ) : (
+          children
+        )}
+      </main>
     </div>
   );
 }
@@ -82,7 +122,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 // 본사 네비게이션
 // ──────────────────────────────────────
 function HQNav({ pathname }: { pathname: string }) {
-  const items = [
+  const items: NavItemDef[] = [
     { href: "/admin/hq", label: "대시보드", icon: "", exact: true },
     { href: "/admin/hq/games", label: "게임 관리", icon: "" },
     { href: "/admin/hq/menus", label: "메뉴 관리", icon: "" },
@@ -100,24 +140,111 @@ function HQNav({ pathname }: { pathname: string }) {
 // ──────────────────────────────────────
 // 매장 네비게이션
 // ──────────────────────────────────────
-function StoreNav({ pathname }: { pathname: string }) {
+function StoreNav({ pathname, isHQAdmin, selectedStore, onSelectStore }: {
+  pathname: string;
+  isHQAdmin?: boolean;
+  selectedStore: { id: number; name: string } | null;
+  onSelectStore: (store: { id: number; name: string } | null) => void;
+}) {
   const session = useSession();
-  const items = [
+  const storeId = isHQAdmin ? selectedStore?.id : session?.storeId;
+  const storeName = isHQAdmin ? selectedStore?.name : session?.storeName;
+
+  const [chatUnread, setChatUnread] = useState(0);
+  const [stores, setStores] = useState<{ id: number; name: string }[]>([]);
+  const [storeDropdownOpen, setStoreDropdownOpen] = useState(false);
+
+  // HQ_ADMIN: 매장 목록 로드
+  useEffect(() => {
+    if (!isHQAdmin) return;
+    fetch("/api/stores")
+      .then((r) => r.json())
+      .then((data: { id: number; name: string }[]) => {
+        setStores(data);
+        // 첫 매장 자동 선택
+        if (!selectedStore && data.length > 0) {
+          onSelectStore({ id: data[0].id, name: data[0].name });
+        }
+      })
+      .catch(() => {});
+  }, [isHQAdmin]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 채팅 미읽 수 폴링 (5초)
+  const fetchChatUnread = useCallback(async () => {
+    if (!storeId) return;
+    try {
+      const res = await fetch(`/api/chat?storeId=${storeId}`);
+      if (!res.ok) return;
+      const threads: { unread: number }[] = await res.json();
+      const total = threads.reduce((sum, t) => sum + (Number(t.unread) || 0), 0);
+      setChatUnread(total);
+    } catch {}
+  }, [storeId]);
+
+  useEffect(() => {
+    fetchChatUnread();
+    const interval = setInterval(fetchChatUnread, 5000);
+    return () => clearInterval(interval);
+  }, [fetchChatUnread]);
+
+  const items: NavItemDef[] = [
     { href: "/admin/store", label: "대시보드", icon: "", exact: true },
     { href: "/admin/store/orders", label: "주문 관리", icon: "" },
     { href: "/admin/store/games", label: "게임 노출", icon: "" },
     { href: "/admin/store/menus", label: "메뉴 관리", icon: "" },
     { href: "/admin/store/tables", label: "테이블 현황", icon: "" },
-    { href: "/admin/store/chat", label: "카운터 쪽지", icon: "" },
+    { href: "/admin/store/chat", label: "카운터 쪽지", icon: "", badge: chatUnread },
     { href: "/admin/store/settings", label: "매장 설정", icon: "" },
   ];
 
   return (
     <>
       {/* 매장 선택 */}
-      <div className="mb-3 rounded-lg bg-gray-50 px-3 py-2">
-        <p className="text-[10px] text-gray-400">현재 매장</p>
-        <p className="text-sm font-bold text-gray-900">{session?.storeName ?? ""}</p>
+      <div className="mb-3 relative">
+        {isHQAdmin ? (
+          /* HQ_ADMIN: 매장 드롭다운 */
+          <div>
+            <button
+              onClick={() => setStoreDropdownOpen(!storeDropdownOpen)}
+              className="w-full rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-left hover:bg-red-100 transition-colors"
+            >
+              <p className="text-[10px] text-red-400 font-medium">본사 모드 · 매장 선택</p>
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-bold text-gray-900">{storeName ?? "선택..."}</p>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-gray-400">
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </div>
+            </button>
+            {storeDropdownOpen && (
+              <div className="absolute left-0 right-0 z-50 mt-1 rounded-lg border border-gray-200 bg-white shadow-lg max-h-48 overflow-y-auto">
+                {stores.map((store) => (
+                  <button
+                    key={store.id}
+                    onClick={() => {
+                      onSelectStore({ id: store.id, name: store.name });
+                      setStoreDropdownOpen(false);
+                    }}
+                    className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 transition-colors ${
+                      selectedStore?.id === store.id ? "bg-red-50 text-red-600 font-bold" : "text-gray-700"
+                    }`}
+                  >
+                    {store.name}
+                  </button>
+                ))}
+                {stores.length === 0 && (
+                  <p className="px-3 py-2 text-xs text-gray-400">등록된 매장이 없습니다</p>
+                )}
+              </div>
+            )}
+          </div>
+        ) : (
+          /* STORE_ADMIN: 고정 매장 표시 */
+          <div className="rounded-lg bg-gray-50 px-3 py-2">
+            <p className="text-[10px] text-gray-400">현재 매장</p>
+            <p className="text-sm font-bold text-gray-900">{session?.storeName ?? ""}</p>
+          </div>
+        )}
       </div>
       <NavList items={items} pathname={pathname} />
     </>
@@ -132,6 +259,7 @@ interface NavItemDef {
   label: string;
   icon: string;
   exact?: boolean;
+  badge?: number;
 }
 
 function NavList({ items, pathname }: { items: NavItemDef[]; pathname: string }) {
@@ -153,7 +281,12 @@ function NavList({ items, pathname }: { items: NavItemDef[]; pathname: string })
             }`}
           >
             <span className="text-sm">{item.icon}</span>
-            {item.label}
+            <span className="flex-1">{item.label}</span>
+            {item.badge !== undefined && item.badge > 0 && (
+              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-[10px] font-bold text-white">
+                {item.badge > 99 ? "99+" : item.badge}
+              </span>
+            )}
           </Link>
         );
       })}

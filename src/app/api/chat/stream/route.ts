@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
 
   let lastId = 0;
   let alive = true;
+  let pollCount = 0;
 
   const stream = new ReadableStream({
     async start(controller) {
@@ -33,7 +34,29 @@ export async function GET(request: NextRequest) {
         }
       };
 
-      // 초기 lastId 설정 (현재 최신 메시지 ID)
+      // 관리자용: 스레드 요약 조회 함수
+      const fetchThreads = async () => {
+        const threads = await prisma.$queryRaw<
+          { tableNo: string; lastMessage: string; lastTime: string; unread: number }[]
+        >`
+          SELECT 
+            tableNo,
+            (SELECT text FROM chat_messages c2 
+             WHERE c2.storeId = ${storeId} AND c2.tableNo = chat_messages.tableNo 
+             ORDER BY c2.id DESC LIMIT 1) as lastMessage,
+            (SELECT createdAt FROM chat_messages c3 
+             WHERE c3.storeId = ${storeId} AND c3.tableNo = chat_messages.tableNo 
+             ORDER BY c3.id DESC LIMIT 1) as lastTime,
+            SUM(CASE WHEN sender = 'CUSTOMER' AND isRead = false THEN 1 ELSE 0 END) as unread
+          FROM chat_messages
+          WHERE storeId = ${storeId}
+          GROUP BY tableNo
+          ORDER BY lastTime DESC
+        `;
+        return threads;
+      };
+
+      // 초기 lastId 설정
       try {
         const latest = await prisma.chatMessage.findFirst({
           where: isAdmin ? { storeId } : { storeId, tableNo },
@@ -47,6 +70,14 @@ export async function GET(request: NextRequest) {
 
       // 연결 확인
       send("connected", { storeId, tableNo, isAdmin });
+
+      // 관리자 모드: 초기 스레드 데이터 전송
+      if (isAdmin) {
+        try {
+          const threads = await fetchThreads();
+          send("threads", threads);
+        } catch {}
+      }
 
       // 1.5초마다 새 메시지 확인
       const poll = async () => {
@@ -63,33 +94,15 @@ export async function GET(request: NextRequest) {
 
             if (newMessages.length > 0) {
               lastId = newMessages[newMessages.length - 1].id;
+              send("messages", newMessages);
+            }
 
-              if (isAdmin) {
-                // 관리자: 메시지 + 스레드 요약 전송
-                send("messages", newMessages);
-
-                // 스레드 요약도 함께 전송
-                const threads = await prisma.$queryRaw<
-                  { tableNo: string; lastMessage: string; lastTime: string; unread: number }[]
-                >`
-                  SELECT 
-                    tableNo,
-                    (SELECT text FROM chat_messages c2 
-                     WHERE c2.storeId = ${storeId} AND c2.tableNo = chat_messages.tableNo 
-                     ORDER BY c2.id DESC LIMIT 1) as lastMessage,
-                    (SELECT createdAt FROM chat_messages c3 
-                     WHERE c3.storeId = ${storeId} AND c3.tableNo = chat_messages.tableNo 
-                     ORDER BY c3.id DESC LIMIT 1) as lastTime,
-                    SUM(CASE WHEN sender = 'CUSTOMER' AND isRead = false THEN 1 ELSE 0 END) as unread
-                  FROM chat_messages
-                  WHERE storeId = ${storeId}
-                  GROUP BY tableNo
-                  ORDER BY lastTime DESC
-                `;
+            // 관리자: 매 3번째 폴링(~4.5초)마다 스레드 갱신 (읽음 상태 반영)
+            if (isAdmin) {
+              pollCount++;
+              if (newMessages.length > 0 || pollCount % 3 === 0) {
+                const threads = await fetchThreads();
                 send("threads", threads);
-              } else {
-                // 고객: 메시지만 전송
-                send("messages", newMessages);
               }
             }
           } catch {

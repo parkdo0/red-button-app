@@ -36,6 +36,20 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
             order: idx,
           })),
         });
+
+        // 추천에 추가된 게임들의 StoreGame이 없으면 자동 생성
+        const activeStores = await prisma.store.findMany({ where: { isActive: true }, select: { id: true } });
+        for (const gId of gameIds as number[]) {
+          await prisma.storeGame.createMany({
+            data: activeStores.map((store) => ({
+              storeId: store.id,
+              gameId: gId,
+              isVisible: true,
+              shelfLocation: "",
+            })),
+            skipDuplicates: true,
+          });
+        }
       }
     }
 

@@ -154,6 +154,20 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // 모든 활성 매장에 StoreGame 자동 생성 (고객 화면에 노출되도록)
+    const activeStores = await prisma.store.findMany({ where: { isActive: true }, select: { id: true } });
+    if (activeStores.length > 0) {
+      await prisma.storeGame.createMany({
+        data: activeStores.map((store) => ({
+          storeId: store.id,
+          gameId: game.id,
+          isVisible: true,
+          shelfLocation: defaultShelfLoc ?? "",
+        })),
+        skipDuplicates: true,
+      });
+    }
+
     return NextResponse.json(game, { status: 201 });
   } catch (error) {
     console.error("게임 생성 실패:", error);

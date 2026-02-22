@@ -24,6 +24,8 @@ export default function HQRecommendPage() {
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [gamePickerFor, setGamePickerFor] = useState<number | null>(null);
+  const [showNewModal, setShowNewModal] = useState(false);
+  const [newForm, setNewForm] = useState({ title: "", subtitle: "", emoji: "🎲" });
 
   const fetchData = () => {
     Promise.all([
@@ -91,6 +93,23 @@ export default function HQRecommendPage() {
     fetchData();
   };
 
+  const createCategory = async () => {
+    if (!newForm.title.trim()) return;
+    await fetch("/api/recommend", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: newForm.title,
+        subtitle: newForm.subtitle,
+        emoji: newForm.emoji,
+        order: categories.length,
+      }),
+    });
+    setShowNewModal(false);
+    setNewForm({ title: "", subtitle: "", emoji: "🎲" });
+    fetchData();
+  };
+
   if (loading) return <div className="flex h-full items-center justify-center text-gray-400">로딩 중...</div>;
 
   return (
@@ -101,7 +120,7 @@ export default function HQRecommendPage() {
             <h1 className="text-lg font-bold text-gray-900">추천 편성</h1>
             <p className="text-xs text-gray-500">태블릿 앱 홈 화면의 가로 스크롤 Row를 구성합니다</p>
           </div>
-          <button className="rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-700">+ 새 카테고리</button>
+          <button onClick={() => setShowNewModal(true)} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-700">+ 새 카테고리</button>
         </div>
 
         <div className="space-y-3">
@@ -154,6 +173,33 @@ export default function HQRecommendPage() {
             );
           })}
         </div>
+
+        {/* 새 카테고리 모달 */}
+        {showNewModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+              <h2 className="mb-4 text-base font-bold text-gray-900">새 카테고리 생성</h2>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs font-medium text-gray-600">이모지</label>
+                  <input value={newForm.emoji} onChange={(e) => setNewForm((f) => ({ ...f, emoji: e.target.value }))} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-600">제목 *</label>
+                  <input value={newForm.title} onChange={(e) => setNewForm((f) => ({ ...f, title: e.target.value }))} placeholder="예: 입문자를 위한 추천 게임" className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-600">부제목</label>
+                  <input value={newForm.subtitle} onChange={(e) => setNewForm((f) => ({ ...f, subtitle: e.target.value }))} placeholder="선택사항" className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" />
+                </div>
+              </div>
+              <div className="mt-5 flex justify-end gap-2">
+                <button onClick={() => setShowNewModal(false)} className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-200">취소</button>
+                <button onClick={createCategory} disabled={!newForm.title.trim()} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-700 disabled:opacity-50">생성</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

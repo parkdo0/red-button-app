@@ -15,6 +15,7 @@ interface Message {
   sender: "STORE" | "CUSTOMER";
   text: string;
   createdAt: string;
+  tableNo?: string;
 }
 
 /**
@@ -37,7 +38,7 @@ export default function StoreChatPage() {
   // ref 동기화 (SSE 콜백에서 최신 값 참조)
   useEffect(() => { activeTableRef.current = activeTable; }, [activeTable]);
 
-  // 초기 스레드/메시지 로드
+  // 스레드 목록 로드
   const loadThreads = useCallback(async () => {
     if (!storeId) return;
     try {
@@ -49,15 +50,17 @@ export default function StoreChatPage() {
           tableNo: t.tableNo,
           lastMessage: t.lastMessage ?? "",
           lastTime: formatTimeAgo(t.lastTime),
-          unread: t.unread,
+          unread: Number(t.unread),
         }))
       );
+      // 첫 진입 시 자동 선택
       if (!activeTableRef.current && data.length > 0) {
         setActiveTable(data[0].tableNo);
       }
     } catch {}
   }, [storeId]);
 
+  // 특정 테이블 메시지 로드 (읽음 처리 포함)
   const loadMessages = useCallback(async () => {
     if (!storeId || !activeTable) return;
     try {
@@ -65,6 +68,12 @@ export default function StoreChatPage() {
       if (!res.ok) return;
       const data: Message[] = await res.json();
       setMessages(data);
+      // 읽음 처리 후 스레드 unread 즉시 반영
+      setThreads((prev) =>
+        prev.map((t) =>
+          t.tableNo === activeTable ? { ...t, unread: 0 } : t
+        )
+      );
     } catch {}
   }, [storeId, activeTable]);
 
@@ -97,18 +106,54 @@ export default function StoreChatPage() {
     es.addEventListener("messages", (e) => {
       try {
         const newMsgs: Message[] = JSON.parse(e.data);
-        // 현재 보고 있는 테이블의 메시지만 추가
         const currentTable = activeTableRef.current;
-        const relevant = newMsgs.filter((m) => {
-          const msgTable = (m as unknown as { tableNo?: string }).tableNo;
-          return msgTable === currentTable;
-        });
+
+        // 현재 보고 있는 테이블의 메시지만 채팅창에 추가
+        const relevant = newMsgs.filter((m) => m.tableNo === currentTable);
         if (relevant.length > 0) {
           setMessages((prev) => {
             const existingIds = new Set(prev.map((m) => m.id));
             const toAdd = relevant.filter((m) => !existingIds.has(m.id));
             return toAdd.length > 0 ? [...prev, ...toAdd] : prev;
           });
+
+          // 현재 보고 있는 테이블의 고객 메시지 → 자동 읽음 처리
+          const hasCustomerMsg = relevant.some((m) => m.sender === "CUSTOMER");
+          if (hasCustomerMsg) {
+            fetch(`/api/chat?storeId=${storeId}&tableNo=${currentTable}`).catch(() => {});
+          }
+        }
+
+        // 스레드 목록에 새 메시지 즉시 반영 (lastMessage 업데이트)
+        for (const msg of newMsgs) {
+          const msgTable = msg.tableNo;
+          if (msgTable) {
+            setThreads((prev) => {
+              const exists = prev.find((t) => t.tableNo === msgTable);
+              if (exists) {
+                return prev.map((t) =>
+                  t.tableNo === msgTable
+                    ? {
+                        ...t,
+                        lastMessage: msg.text,
+                        lastTime: "방금",
+                        unread: msgTable === currentTable ? 0 : t.unread + (msg.sender === "CUSTOMER" ? 1 : 0),
+                      }
+                    : t
+                );
+              }
+              // 새 테이블에서 첫 메시지
+              return [
+                {
+                  tableNo: msgTable,
+                  lastMessage: msg.text,
+                  lastTime: "방금",
+                  unread: msg.sender === "CUSTOMER" ? 1 : 0,
+                },
+                ...prev,
+              ];
+            });
+          }
         }
       } catch {}
     });
@@ -144,7 +189,6 @@ export default function StoreChatPage() {
       if (res.ok) {
         const saved = await res.json();
         setInput("");
-        // 낙관적 추가
         setMessages((prev) => {
           if (prev.some((m) => m.id === saved.id)) return prev;
           return [...prev, saved];
@@ -313,6 +357,7 @@ export default function StoreChatPage() {
 }
 
 function formatTimeAgo(dateStr: string): string {
+  if (!dateStr) return "";
   const diff = Date.now() - new Date(dateStr).getTime();
   const min = Math.floor(diff / 60000);
   if (min < 1) return "방금";
@@ -323,8 +368,9 @@ function formatTimeAgo(dateStr: string): string {
 }
 
 function formatTime(dateStr: string): string {
+  if (!dateStr) return "";
   const d = new Date(dateStr);
   const h = d.getHours();
   const m = String(d.getMinutes()).padStart(2, "0");
-  return `${h > 12 ? "오후" : "오전"} ${h > 12 ? h - 12 : h}:${m}`;
+  return `${h >= 12 ? "오후" : "오전"} ${h > 12 ? h - 12 : h === 0 ? 12 : h}:${m}`;
 }

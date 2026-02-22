@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 
-interface SessionInfo {
+export interface SessionInfo {
   role: "HQ_ADMIN" | "STORE_ADMIN" | "TABLE";
   userId?: number;
   storeId?: number;
@@ -12,7 +12,7 @@ interface SessionInfo {
   tableId?: number;
 }
 
-const SessionContext = createContext<SessionInfo | null>(null);
+export const SessionContext = createContext<SessionInfo | null>(null);
 
 export function useSession() {
   return useContext(SessionContext);

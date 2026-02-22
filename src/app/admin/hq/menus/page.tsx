@@ -24,14 +24,24 @@ export default function HQMenusPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState({ name: "", basePrice: 0, description: "", imageUrl: "" });
   const [uploading, setUploading] = useState(false);
+  const [showNewModal, setShowNewModal] = useState(false);
+  const [newMenuForm, setNewMenuForm] = useState({ categoryId: 0, name: "", basePrice: 0, description: "", isNew: false, isBest: false });
+  const [categories, setCategories] = useState<{ id: number; name: string }[]>([]);
 
   const tabs = ["전체", "푸드", "음료", "벌칙메뉴", "MD상품"];
 
   const fetchMenus = () => {
-    fetch("/api/menus")
-      .then((r) => r.json())
-      .then((data) => { setMenus(data); setLoading(false); })
-      .catch(() => setLoading(false));
+    Promise.all([
+      fetch("/api/menus").then((r) => r.json()),
+      fetch("/api/categories").then((r) => r.json()).catch(() => []),
+    ]).then(([menuData, catData]) => {
+      setMenus(menuData);
+      setCategories(catData);
+      if (catData.length > 0 && newMenuForm.categoryId === 0) {
+        setNewMenuForm((f) => ({ ...f, categoryId: catData[0].id }));
+      }
+      setLoading(false);
+    }).catch(() => setLoading(false));
   };
 
   useEffect(() => { fetchMenus(); }, []);
@@ -97,6 +107,18 @@ export default function HQMenusPage() {
     fetchMenus();
   };
 
+  const createMenu = async () => {
+    if (!newMenuForm.name.trim() || !newMenuForm.categoryId) return;
+    await fetch("/api/menus", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newMenuForm),
+    });
+    setShowNewModal(false);
+    setNewMenuForm({ categoryId: categories[0]?.id ?? 0, name: "", basePrice: 0, description: "", isNew: false, isBest: false });
+    fetchMenus();
+  };
+
   if (loading) return <div className="flex h-full items-center justify-center text-gray-400">로딩 중...</div>;
 
   return (
@@ -107,7 +129,7 @@ export default function HQMenusPage() {
             <h1 className="text-lg font-bold text-gray-900">메뉴 관리</h1>
             <p className="text-xs text-gray-500">전체 {menus.length}종 · 마스터 메뉴 DB</p>
           </div>
-          <button className="rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-700">+ 새 메뉴 등록</button>
+          <button onClick={() => setShowNewModal(true)} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-700">+ 새 메뉴 등록</button>
         </div>
         <div className="mt-3 flex items-center gap-3">
           <div className="flex gap-1">
@@ -214,6 +236,47 @@ export default function HQMenusPage() {
         </table>
         {filtered.length === 0 && <div className="flex h-32 items-center justify-center text-sm text-gray-400">검색 결과 없음</div>}
       </div>
+
+      {/* 새 메뉴 등록 모달 */}
+      {showNewModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <h2 className="mb-4 text-base font-bold text-gray-900">새 메뉴 등록</h2>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-medium text-gray-600">카테고리 *</label>
+                <select value={newMenuForm.categoryId} onChange={(e) => setNewMenuForm((f) => ({ ...f, categoryId: +e.target.value }))} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm">
+                  {categories.map((c) => (<option key={c.id} value={c.id}>{c.name}</option>))}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600">메뉴명 *</label>
+                <input value={newMenuForm.name} onChange={(e) => setNewMenuForm((f) => ({ ...f, name: e.target.value }))} placeholder="메뉴 이름" className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600">기본 가격 *</label>
+                <input type="number" value={newMenuForm.basePrice} onChange={(e) => setNewMenuForm((f) => ({ ...f, basePrice: +e.target.value }))} className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600">설명</label>
+                <input value={newMenuForm.description} onChange={(e) => setNewMenuForm((f) => ({ ...f, description: e.target.value }))} placeholder="선택사항" className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" />
+              </div>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-1.5 text-xs">
+                  <input type="checkbox" checked={newMenuForm.isNew} onChange={(e) => setNewMenuForm((f) => ({ ...f, isNew: e.target.checked }))} /> NEW 뱃지
+                </label>
+                <label className="flex items-center gap-1.5 text-xs">
+                  <input type="checkbox" checked={newMenuForm.isBest} onChange={(e) => setNewMenuForm((f) => ({ ...f, isBest: e.target.checked }))} /> BEST 뱃지
+                </label>
+              </div>
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <button onClick={() => setShowNewModal(false)} className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-200">취소</button>
+              <button onClick={createMenu} disabled={!newMenuForm.name.trim() || !newMenuForm.categoryId} className="rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-700 disabled:opacity-50">등록</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

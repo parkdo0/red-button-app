@@ -123,7 +123,7 @@ export default function ChatClient({ storeName, storeId, tableNo, initialMessage
           storeId,
           tableNo,
           sender: "CUSTOMER",
-          text: text.trim(),
+          message: text.trim(),
         }),
       });
       if (res.ok) {
