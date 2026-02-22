@@ -90,6 +90,8 @@ function HQNav({ pathname }: { pathname: string }) {
     { href: "/admin/hq/events", label: "이벤트 관리", icon: "" },
     { href: "/admin/hq/stores", label: "매장 현황", icon: "" },
     { href: "/admin/hq/tags", label: "태그 관리", icon: "" },
+    { href: "/admin/hq/coupons", label: "쿠폰 관리", icon: "🎟️" },
+    { href: "/admin/hq/feedback", label: "고객 의견", icon: "📬" },
   ];
 
   return <NavList items={items} pathname={pathname} />;

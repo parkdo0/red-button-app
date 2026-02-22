@@ -2,23 +2,38 @@
 
 import { useState } from "react";
 import { useToast } from "@/components/ToastProvider";
+import { useSession } from "@/components/SessionProvider";
 
 /**
  * 직원 호출 버튼 - 레드버튼 스타일
+ * 채팅 API로 자동 메시지 전송
  */
 export default function StaffCallButton() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [isCalling, setIsCalling] = useState(false);
   const [cooldown, setCooldown] = useState(false);
   const { showToast } = useToast();
+  const session = useSession();
 
   const handleCall = async () => {
     if (isCalling || cooldown) return;
     setIsCalling(true);
     try {
-      // TODO: POST /api/staff-call { storeId, tableId }
-      await new Promise((r) => setTimeout(r, 500));
-      showToast("직원을 호출했습니다. 잠시만 기다려주세요!");
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          storeId: session?.storeId ?? 1,
+          tableNo: session?.tableNo ?? "1",
+          sender: "CUSTOMER",
+          message: "🔔 [직원 호출] 테이블에서 직원을 호출했습니다.",
+        }),
+      });
+      if (res.ok) {
+        showToast("직원을 호출했습니다. 잠시만 기다려주세요!");
+      } else {
+        showToast("호출에 실패했습니다. 다시 시도해주세요.", "error");
+      }
       setShowConfirm(false);
       setCooldown(true);
       setTimeout(() => setCooldown(false), 10000);
@@ -28,6 +43,8 @@ export default function StaffCallButton() {
       setIsCalling(false);
     }
   };
+
+  const tableLabel = session?.tableNo ? `${session.tableNo}번` : "";
 
   return (
     <>
@@ -56,7 +73,7 @@ export default function StaffCallButton() {
               </div>
             </div>
             <h2 className="text-center text-lg font-extrabold text-text-primary">직원을 호출할까요?</h2>
-            <p className="mt-2 text-center text-sm text-text-muted">A1 테이블로 직원이 방문합니다</p>
+            <p className="mt-2 text-center text-sm text-text-muted">{tableLabel} 테이블로 직원이 방문합니다</p>
             <div className="mt-5 flex gap-3">
               <button onClick={() => setShowConfirm(false)} disabled={isCalling} className="flex-1 rounded-2xl border border-border-default bg-bg-card py-3.5 text-sm font-semibold text-text-secondary transition-colors hover:bg-bg-card-hover touch-feedback disabled:opacity-40">
                 취소

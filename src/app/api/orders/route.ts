@@ -13,6 +13,7 @@ interface CreateOrderRequest {
   storeId: number;
   tableId: number;
   memo?: string;
+  paymentMethod?: string;
   items: OrderItemRequest[];
 }
 
@@ -44,12 +45,15 @@ export async function POST(request: NextRequest) {
     const order = await prisma.$transaction(async (tx) => {
       let totalPrice = 0;
 
-      // 1. 주문 생성 (빈 상태)
+      // 1. 주문 생성 (결제 정보 포함)
       const newOrder = await tx.order.create({
         data: {
           storeId,
           tableId,
           memo: body.memo ?? null,
+          paymentMethod: (body.paymentMethod as "CARD" | "SAMSUNG_PAY" | "KAKAO_PAY" | "NAVER_PAY" | "CASH") ?? "CARD",
+          paymentStatus: "COMPLETED",
+          paidAt: new Date(),
           totalPrice: 0,
         },
       });

@@ -47,10 +47,21 @@ export default function StoreSettingsPage() {
     setSaved(false);
   };
 
-  const handleSave = () => {
-    // TODO: API 호출
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  const handleSave = async () => {
+    if (!session?.storeId) return;
+    try {
+      const res = await fetch(`/api/stores/${session.storeId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (res.ok) {
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      }
+    } catch {
+      /* ignore */
+    }
   };
 
   return (

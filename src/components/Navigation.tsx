@@ -7,6 +7,7 @@ import { useCart } from "@/components/cart/CartProvider";
 /**
  * 사이드바 네비게이션 - 실제 레드버튼 앱 기준
  * 8개 메뉴 + RBTN 로고 + 쿠폰 하단 고정
+ * 로그인/관리자 페이지에서는 숨김
  */
 
 interface NavItem {
@@ -106,8 +107,8 @@ export default function Navigation() {
   const pathname = usePathname();
   const { totalCount } = useCart();
 
-  // 관리자 페이지에서는 사이드바 숨김
-  if (pathname.startsWith("/admin")) return null;
+  // 관리자/로그인 페이지에서는 사이드바 숨김
+  if (pathname.startsWith("/admin") || pathname === "/login") return null;
 
   return (
     <nav className="flex w-[80px] flex-col items-center justify-between bg-[#111015] py-4 border-r border-[#222]">

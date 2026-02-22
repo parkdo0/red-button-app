@@ -6,9 +6,11 @@ import { useToast } from "@/components/ToastProvider";
 import { formatPrice } from "@/data/constants";
 import { ORDER_STATUS_LABEL } from "@/data/order-constants";
 import OrderConfirmModal from "@/components/cart/OrderConfirmModal";
+import PaymentWaitingModal from "@/components/cart/PaymentWaitingModal";
 import { orderApi } from "@/lib/api";
-import type { CreateOrderRequest } from "@/types/api";
+import type { CreateOrderRequest, PaymentMethod } from "@/types/api";
 import { useSession } from "@/components/SessionProvider";
+import { PAYMENT_METHOD_LABEL } from "@/data/order-constants";
 
 type PanelTab = "cart" | "history";
 
@@ -22,19 +24,28 @@ type PanelTab = "cart" | "history";
 export default function OrderCartPanel() {
   const [activeTab, setActiveTab] = useState<PanelTab>("cart");
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showPayment, setShowPayment] = useState(false);
   const [isOrdering, setIsOrdering] = useState(false);
   const { items, totalPrice, totalCount, updateQuantity, removeItem, clearCart } = useCart();
   const { showToast } = useToast();
 
   const session = useSession();
 
-  const handleConfirmOrder = async () => {
+  // 주문 확인 → 결제 화면으로
+  const handleProceedToPayment = () => {
+    setShowConfirm(false);
+    setShowPayment(true);
+  };
+
+  // 결제 완료 → 주문 생성 API 호출
+  const handlePaymentComplete = async (method: PaymentMethod) => {
     if (isOrdering) return;
     setIsOrdering(true);
 
     const body: CreateOrderRequest = {
       storeId: session?.storeId ?? 1,
       tableId: session?.tableId ?? 1,
+      paymentMethod: method,
       items: items.map((item) => ({
         menuId: item.menuId,
         quantity: item.quantity,
@@ -44,10 +55,10 @@ export default function OrderCartPanel() {
 
     try {
       await orderApi.create(body);
-      showToast(`주문이 접수되었습니다! (${formatPrice(totalPrice)})`);
+      showToast(`${PAYMENT_METHOD_LABEL[method]}로 결제 완료! (${formatPrice(totalPrice)})`);
       clearCart();
-      setShowConfirm(false);
-      setActiveTab("history"); // 주문 후 내역 탭으로 전환
+      setShowPayment(false);
+      setActiveTab("history");
     } catch (err) {
       const message = err instanceof Error ? err.message : "주문 처리 중 오류가 발생했습니다.";
       showToast(message, "error");
@@ -149,9 +160,18 @@ export default function OrderCartPanel() {
         <OrderConfirmModal
           items={items}
           totalPrice={totalPrice}
-          isLoading={isOrdering}
-          onConfirm={handleConfirmOrder}
+          isLoading={false}
+          onConfirm={handleProceedToPayment}
           onCancel={() => setShowConfirm(false)}
+        />
+      )}
+
+      {/* 결제 대기 모달 */}
+      {showPayment && (
+        <PaymentWaitingModal
+          totalPrice={totalPrice}
+          onComplete={handlePaymentComplete}
+          onCancel={() => setShowPayment(false)}
         />
       )}
     </>
@@ -250,6 +270,8 @@ interface ApiOrder {
   id: number;
   status: string;
   totalPrice: number;
+  paymentMethod: string | null;
+  paymentStatus: string;
   orderedAt: string;
   items: { id: number; menuName: string; quantity: number; subTotal: number; options: { optionName: string }[] }[];
 }
@@ -298,11 +320,17 @@ function HistoryContent() {
               </span>
             </div>
 
-            {/* 주문 시간 */}
+            {/* 주문 시간 + 결제 수단 */}
             <div className="flex items-center justify-between mb-2">
               <span className="text-[12px] text-gray-400">주문시간</span>
               <span className="text-[12px] text-gray-600">{timeStr}</span>
             </div>
+            {order.paymentMethod && (
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[12px] text-gray-400">결제수단</span>
+                <span className="text-[12px] text-gray-600">{PAYMENT_METHOD_LABEL[order.paymentMethod] ?? order.paymentMethod}</span>
+              </div>
+            )}
 
             {/* 주문 아이템 목록 */}
             {order.items.map((item) => (

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { formatPrice } from "@/data/constants";
 import { ADMIN_ORDER_STATUS_LABEL, ADMIN_ORDER_STATUS_COLOR, ORDER_STATUS_FLOW } from "@/data/admin-constants";
+import { PAYMENT_METHOD_LABEL } from "@/data/order-constants";
 import { useSession } from "@/components/SessionProvider";
 
 interface OrderItem {
@@ -17,6 +18,8 @@ interface AdminOrder {
   tableNo: string;
   status: string;
   totalPrice: number;
+  paymentMethod: string | null;
+  paymentStatus: string;
   orderedAt: string;
   items: OrderItem[];
 }
@@ -44,6 +47,8 @@ export default function StoreOrdersPage() {
           tableNo: (o as Record<string, unknown>).tableNo as string ?? ((o as Record<string, Record<string, unknown>>).table?.tableNo as string) ?? "-",
           status: o.status as string,
           totalPrice: o.totalPrice as number,
+          paymentMethod: (o.paymentMethod as string) ?? null,
+          paymentStatus: (o.paymentStatus as string) ?? "PENDING",
           orderedAt: o.orderedAt as string,
           items: ((o.items as Record<string, unknown>[]) ?? []).map((i) => ({
             menuName: i.menuName as string,
@@ -167,7 +172,14 @@ export default function StoreOrdersPage() {
                     </div>
 
                     <div className="flex items-center justify-between border-t border-gray-100 pt-2">
-                      <span className="text-sm font-bold text-gray-900">{formatPrice(order.totalPrice)}</span>
+                      <div>
+                        <span className="text-sm font-bold text-gray-900">{formatPrice(order.totalPrice)}</span>
+                        {order.paymentMethod && (
+                          <span className="ml-1.5 text-[10px] text-gray-400">
+                            {PAYMENT_METHOD_LABEL[order.paymentMethod] ?? order.paymentMethod}
+                          </span>
+                        )}
+                      </div>
                       <div className="flex gap-1.5">
                         {(ORDER_STATUS_FLOW[status] ?? []).map((nextStatus) => (
                           <button
@@ -233,7 +245,7 @@ function OrderDetailModal({ order, onClose, onStatusChange, elapsed }: {
           </button>
         </div>
 
-        <div className="mb-4 grid grid-cols-3 gap-3 rounded-xl bg-gray-50 p-3">
+        <div className="mb-4 grid grid-cols-2 gap-3 rounded-xl bg-gray-50 p-3">
           <div>
             <p className="text-[10px] text-gray-400">테이블</p>
             <p className="text-sm font-bold text-gray-900">{order.tableNo}번</p>
@@ -245,6 +257,12 @@ function OrderDetailModal({ order, onClose, onStatusChange, elapsed }: {
           <div>
             <p className="text-[10px] text-gray-400">총 금액</p>
             <p className="text-sm font-bold text-red-600">{formatPrice(order.totalPrice)}</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-gray-400">결제 수단</p>
+            <p className="text-sm font-bold text-gray-900">
+              {order.paymentMethod ? (PAYMENT_METHOD_LABEL[order.paymentMethod] ?? order.paymentMethod) : "-"}
+            </p>
           </div>
         </div>
 

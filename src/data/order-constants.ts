@@ -34,3 +34,33 @@ export const ORDER_STATUS_COLOR: Record<string, string> = {
   COMPLETED: "bg-green-badge/12 text-green-badge",
   CANCELLED: "bg-red-primary/12 text-red-primary",
 };
+
+// ============================================
+// 결제 관련 상수
+// ============================================
+
+export type PaymentMethod = "CARD" | "SAMSUNG_PAY" | "KAKAO_PAY" | "NAVER_PAY" | "CASH";
+export type PaymentStatus = "PENDING" | "COMPLETED" | "FAILED" | "REFUNDED";
+
+export const PAYMENT_METHOD_LABEL: Record<string, string> = {
+  CARD: "카드 결제",
+  SAMSUNG_PAY: "삼성페이",
+  KAKAO_PAY: "카카오페이",
+  NAVER_PAY: "네이버페이",
+  CASH: "현금",
+};
+
+export const PAYMENT_STATUS_LABEL: Record<string, string> = {
+  PENDING: "결제 대기",
+  COMPLETED: "결제 완료",
+  FAILED: "결제 실패",
+  REFUNDED: "환불",
+};
+
+export const PAYMENT_METHOD_ICON: Record<string, string> = {
+  CARD: "CreditCard",
+  SAMSUNG_PAY: "Smartphone",
+  KAKAO_PAY: "Wallet",
+  NAVER_PAY: "Wallet",
+  CASH: "Banknote",
+};

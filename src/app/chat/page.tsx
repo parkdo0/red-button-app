@@ -23,5 +23,12 @@ export default async function ChatPage() {
     }),
   }));
 
-  return <ChatClient storeName={storeName} initialMessages={initialMessages} />;
+  return (
+    <ChatClient
+      storeName={storeName}
+      storeId={storeId}
+      tableNo={tableNo}
+      initialMessages={initialMessages}
+    />
+  );
 }

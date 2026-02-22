@@ -348,15 +348,33 @@ enum OrderStatus {
   CANCELLED
 }
 
+enum PaymentMethod {
+  CARD          // 카드 단말기
+  SAMSUNG_PAY   // 삼성페이
+  KAKAO_PAY     // 카카오페이
+  NAVER_PAY     // 네이버페이
+  CASH          // 현금
+}
+
+enum PaymentStatus {
+  PENDING       // 결제 대기
+  COMPLETED     // 결제 완료
+  FAILED        // 결제 실패
+  REFUNDED      // 환불
+}
+
 model Order {
   id         Int         @id @default(autoincrement())
   storeId    Int
   tableId    Int
   status     OrderStatus @default(PENDING)
-  totalPrice Int         @default(0)
-  memo       String?     @db.VarChar(500)
-  orderedAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  totalPrice     Int            @default(0)
+  paymentMethod  PaymentMethod?
+  paymentStatus  PaymentStatus  @default(PENDING)
+  paidAt         DateTime?
+  memo           String?        @db.VarChar(500)
+  orderedAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 
   store Store       @relation(fields: [storeId], references: [id])
   table Table       @relation(fields: [tableId], references: [id])
@@ -422,7 +440,59 @@ model ChatMessage {
 }
 
 // ============================================
-// 7. 이벤트 배너
+// 7. 고객 의견 (Feedback)
+// ============================================
+
+model Feedback {
+  id        Int      @id @default(autoincrement())
+  storeId   Int
+  tableNo   String   @db.VarChar(10)
+  content   String   @db.Text
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([storeId, createdAt])
+  @@map("feedbacks")
+}
+
+// ============================================
+// 8. 쿠폰 (Coupon)
+// ============================================
+
+model Coupon {
+  id            Int      @id @default(autoincrement())
+  code          String   @unique @db.VarChar(20)  // "굴대스" "WELCOME2024"
+  name          String   @db.VarChar(100)          // "신규 회원 1000원 할인"
+  discountAmount Int                               // 정액 할인 (1000 = 1000원)
+  minOrderAmount Int     @default(0)               // 최소 주문 금액
+  maxUses       Int?                               // 총 사용 횟수 제한 (null = 무제한)
+  usedCount     Int      @default(0)               // 현재 사용 횟수
+  isActive      Boolean  @default(true)
+  startDate     DateTime?
+  endDate       DateTime?
+  createdAt     DateTime @default(now())
+
+  usages CouponUsage[]
+
+  @@map("coupons")
+}
+
+model CouponUsage {
+  id        Int      @id @default(autoincrement())
+  couponId  Int
+  storeId   Int
+  tableNo   String   @db.VarChar(10)
+  orderId   Int?
+  usedAt    DateTime @default(now())
+
+  coupon Coupon @relation(fields: [couponId], references: [id])
+
+  @@index([couponId])
+  @@map("coupon_usages")
+}
+
+// ============================================
+// 9. 이벤트 배너
 // ============================================
 
 model Event {

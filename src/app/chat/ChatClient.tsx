@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 
 export interface ChatMsg {
   id: number;
@@ -18,15 +18,10 @@ const QUICK_BUTTONS = [
 
 interface Props {
   storeName: string;
+  storeId: number;
+  tableNo: string;
   initialMessages: ChatMsg[];
 }
-
-/** 매장 자동 응답 */
-const AUTO_REPLIES: Record<string, string> = {
-  "이용 시간이 얼마나 남았나요?": "현재 이용 시간은 약 1시간 32분 남았습니다. 연장을 원하시면 카운터로 말씀해주세요!",
-  "와이파이 비밀번호가 뭔가요?": "와이파이 정보입니다!\nID: redbutton\nPW: red2563799",
-  "화장실이 어디에 있나요?": "화장실은 매장 입구 왼쪽에 있습니다. 성별 구분 없이 이용 가능합니다!",
-};
 
 function getCurrentTime(): string {
   const now = new Date();
@@ -37,68 +32,123 @@ function getCurrentTime(): string {
   return `${period} ${hour12}:${m}`;
 }
 
+function formatMsgTime(dateStr: string): string {
+  const d = new Date(dateStr);
+  const h = d.getHours();
+  const m = String(d.getMinutes()).padStart(2, "0");
+  const period = h >= 12 ? "오후" : "오전";
+  const hour12 = h > 12 ? h - 12 : h === 0 ? 12 : h;
+  return `${period} ${hour12}:${m}`;
+}
+
 /**
- * 카운터 쪽지 - 실제 레드버튼 앱 기준
- * 카카오톡 스타일 채팅 UI + 빠른 질문 버튼
+ * 카운터 쪽지 - SSE 실시간 채팅
+ * 메시지 전송: POST /api/chat
+ * 메시지 수신: SSE /api/chat/stream
  */
-export default function ChatClient({ storeName, initialMessages }: Props) {
+export default function ChatClient({ storeName, storeId, tableNo, initialMessages }: Props) {
   const [messages, setMessages] = useState<ChatMsg[]>(initialMessages);
   const [input, setInput] = useState("");
+  const [sending, setSending] = useState(false);
+  const [connected, setConnected] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const nextIdRef = useRef(initialMessages.length + 1);
+  const seenIdsRef = useRef<Set<number>>(new Set(initialMessages.map((m) => m.id)));
 
   // 메시지 추가 시 스크롤
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
-  const sendMessage = (text: string) => {
-    if (!text.trim()) return;
+  // SSE 연결
+  useEffect(() => {
+    const es = new EventSource(`/api/chat/stream?storeId=${storeId}&tableNo=${tableNo}`);
 
-    const customerMsg: ChatMsg = {
-      id: nextIdRef.current++,
+    es.addEventListener("connected", () => {
+      setConnected(true);
+    });
+
+    es.addEventListener("messages", (e) => {
+      try {
+        const newMsgs: { id: number; sender: string; text: string; createdAt: string }[] = JSON.parse(e.data);
+        setMessages((prev) => {
+          const toAdd: ChatMsg[] = [];
+          for (const m of newMsgs) {
+            if (!seenIdsRef.current.has(m.id)) {
+              seenIdsRef.current.add(m.id);
+              toAdd.push({
+                id: m.id,
+                sender: m.sender === "STORE" ? "store" : "customer",
+                text: m.text,
+                time: formatMsgTime(m.createdAt),
+              });
+            }
+          }
+          return toAdd.length > 0 ? [...prev, ...toAdd] : prev;
+        });
+      } catch {}
+    });
+
+    es.onerror = () => {
+      setConnected(false);
+      // 자동 재연결 (EventSource 기본 동작)
+    };
+
+    return () => {
+      es.close();
+      setConnected(false);
+    };
+  }, [storeId, tableNo]);
+
+  // 메시지 전송
+  const sendMessage = useCallback(async (text: string) => {
+    if (!text.trim() || sending) return;
+    setSending(true);
+
+    // 낙관적 업데이트
+    const tempId = -(Date.now());
+    const optimisticMsg: ChatMsg = {
+      id: tempId,
       sender: "customer",
       text: text.trim(),
       time: getCurrentTime(),
     };
-    setMessages((prev) => [...prev, customerMsg]);
+    setMessages((prev) => [...prev, optimisticMsg]);
     setInput("");
 
-    // 자동 응답 (1초 딜레이)
-    const reply = AUTO_REPLIES[text.trim()];
-    if (reply) {
-      setTimeout(() => {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: nextIdRef.current++,
-            sender: "store",
-            text: reply,
-            time: getCurrentTime(),
-          },
-        ]);
-      }, 1000);
-    } else {
-      // 기본 응답
-      setTimeout(() => {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: nextIdRef.current++,
-            sender: "store",
-            text: "확인했습니다! 곧 답변 드리겠습니다 ",
-            time: getCurrentTime(),
-          },
-        ]);
-      }, 1200);
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          storeId,
+          tableNo,
+          sender: "CUSTOMER",
+          text: text.trim(),
+        }),
+      });
+      if (res.ok) {
+        const saved = await res.json();
+        // 낙관적 메시지를 실제 ID로 교체
+        seenIdsRef.current.add(saved.id);
+        setMessages((prev) =>
+          prev.map((m) => (m.id === tempId ? { ...m, id: saved.id } : m))
+        );
+      }
+    } catch {
+      // 전송 실패 시 메시지 유지 (재시도 가능)
+    } finally {
+      setSending(false);
     }
-  };
+  }, [storeId, tableNo, sending]);
 
   return (
     <div className="flex h-full flex-col bg-bg-primary">
       {/* 헤더 */}
       <div className="flex-shrink-0 border-b border-border-default px-6 py-4">
-        <h1 className="text-lg font-bold text-text-primary">{storeName}</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-lg font-bold text-text-primary">{storeName}</h1>
+          <span className={`h-2 w-2 rounded-full ${connected ? "bg-green-500" : "bg-gray-400"}`} title={connected ? "연결됨" : "연결 중..."} />
+        </div>
       </div>
 
       {/* 채팅 영역 */}
@@ -153,9 +203,9 @@ export default function ChatClient({ storeName, initialMessages }: Props) {
           />
           <button
             onClick={() => sendMessage(input)}
-            disabled={!input.trim()}
+            disabled={!input.trim() || sending}
             className={`flex h-10 w-10 items-center justify-center rounded-full transition-all touch-feedback ${
-              input.trim()
+              input.trim() && !sending
                 ? "bg-red-primary text-white"
                 : "bg-bg-card text-text-muted"
             }`}

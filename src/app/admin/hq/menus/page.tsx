@@ -22,7 +22,8 @@ export default function HQMenusPage() {
   const [menus, setMenus] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [editForm, setEditForm] = useState({ name: "", basePrice: 0, description: "" });
+  const [editForm, setEditForm] = useState({ name: "", basePrice: 0, description: "", imageUrl: "" });
+  const [uploading, setUploading] = useState(false);
 
   const tabs = ["전체", "푸드", "음료", "벌칙메뉴", "MD상품"];
 
@@ -45,14 +46,28 @@ export default function HQMenusPage() {
 
   const startEdit = (menu: MenuItem) => {
     setEditingId(menu.id);
-    setEditForm({ name: menu.name, basePrice: menu.basePrice, description: menu.description ?? "" });
+    setEditForm({ name: menu.name, basePrice: menu.basePrice, description: menu.description ?? "", imageUrl: menu.imageUrl ?? "" });
+  };
+
+  const handleMenuImageUpload = async (file: File) => {
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("folder", "menus");
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      if (res.ok) {
+        const { url } = await res.json();
+        setEditForm((f) => ({ ...f, imageUrl: url }));
+      }
+    } catch {} finally { setUploading(false); }
   };
 
   const saveEdit = async (menuId: number) => {
     await fetch(`/api/menus/${menuId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: editForm.name, basePrice: editForm.basePrice, description: editForm.description }),
+      body: JSON.stringify({ name: editForm.name, basePrice: editForm.basePrice, description: editForm.description, imageUrl: editForm.imageUrl || null }),
     });
     setEditingId(null);
     fetchMenus();
@@ -131,13 +146,23 @@ export default function HQMenusPage() {
                   <td className="px-4 py-3">
                     {isEditing ? (
                       <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          {editForm.imageUrl && <img src={editForm.imageUrl} alt="" className="h-10 w-10 rounded object-cover border border-gray-200" />}
+                          <label className={`cursor-pointer rounded px-2 py-1 text-[10px] font-medium ${uploading ? 'bg-gray-200 text-gray-400' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                            {uploading ? '업로드중...' : '이미지'}
+                            <input type="file" accept="image/*" className="hidden" disabled={uploading} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleMenuImageUpload(f); }} />
+                          </label>
+                        </div>
                         <input value={editForm.name} onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))} className="w-full rounded border border-blue-300 bg-blue-50/30 px-2 py-1 text-sm font-medium" />
                         <input value={editForm.description} onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))} placeholder="설명" className="w-full rounded border border-gray-200 px-2 py-1 text-[11px] text-gray-500" />
                       </div>
                     ) : (
-                      <div>
-                        <span className="text-sm font-medium text-gray-900">{menu.name}</span>
-                        {menu.description && <p className="text-[10px] text-gray-400 mt-0.5">{menu.description}</p>}
+                      <div className="flex items-center gap-2">
+                        {menu.imageUrl && <img src={menu.imageUrl} alt="" className="h-10 w-10 rounded object-cover border border-gray-200" />}
+                        <div>
+                          <span className="text-sm font-medium text-gray-900">{menu.name}</span>
+                          {menu.description && <p className="text-[10px] text-gray-400 mt-0.5">{menu.description}</p>}
+                        </div>
                       </div>
                     )}
                   </td>

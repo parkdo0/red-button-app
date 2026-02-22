@@ -42,7 +42,7 @@ export default function OrderConfirmModal({
         </div>
 
         <h2 className="text-center text-lg font-extrabold text-gray-900">
-          {isLoading ? "주문 처리 중..." : "주문을 확인해주세요"}
+          {isLoading ? "처리 중..." : "주문을 확인해주세요"}
         </h2>
 
         {/* 주문 요약 */}
@@ -92,7 +92,7 @@ export default function OrderConfirmModal({
                 처리 중
               </span>
             ) : (
-              "주문하기"
+              "결제하기"
             )}
           </button>
         </div>

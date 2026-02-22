@@ -114,6 +114,11 @@ export const orderApi = {
   updateStatus(id: number, data: UpdateOrderRequest) {
     return apiPatch<OrderResponse>(`/orders/${id}`, data);
   },
+
+  /** 결제 콜백 (VAN사 연동 포인트) */
+  processPayment(id: number, data: { status: "COMPLETED" | "FAILED"; transactionId?: string }) {
+    return apiPost<{ success: boolean; orderId: number; paymentStatus: string }>(`/orders/${id}/payment`, data);
+  },
 };
 
 // ============================================

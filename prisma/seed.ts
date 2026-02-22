@@ -354,13 +354,13 @@ async function main() {
   // ============================================
   console.log("Creating orders...");
   const orderSeeds = [
-    { tableNo: "31", status: "PENDING", minutesAgo: 2, items: [{ menuId: 1, menuName: "마라떡볶이", basePrice: 9500, quantity: 1 }, { menuId: 9, menuName: "콜라", basePrice: 2500, quantity: 2 }] },
-    { tableNo: "15", status: "PENDING", minutesAgo: 6, items: [{ menuId: 3, menuName: "크리스피 콜팝", basePrice: 6500, quantity: 3 }, { menuId: 8, menuName: "제로 복숭아 아이스티", basePrice: 4300, quantity: 1 }] },
-    { tableNo: "7", status: "PREPARING", minutesAgo: 19, items: [{ menuId: 2, menuName: "피자떡볶이", basePrice: 9500, quantity: 1 }] },
-    { tableNo: "22", status: "PREPARING", minutesAgo: 25, items: [{ menuId: 1, menuName: "마라떡볶이", basePrice: 9500, quantity: 1 }, { menuId: 6, menuName: "감자튀김", basePrice: 6000, quantity: 1 }, { menuId: 9, menuName: "콜라", basePrice: 2500, quantity: 1 }] },
-    { tableNo: "3", status: "CONFIRMED", minutesAgo: 30, items: [{ menuId: 5, menuName: "치즈볼", basePrice: 5500, quantity: 2 }] },
-    { tableNo: "18", status: "COMPLETED", minutesAgo: 45, items: [{ menuId: 11, menuName: "아메리카노", basePrice: 3500, quantity: 1 }, { menuId: 12, menuName: "자몽에이드", basePrice: 4500, quantity: 1 }] },
-    { tableNo: "11", status: "COMPLETED", minutesAgo: 60, items: [{ menuId: 1, menuName: "마라떡볶이", basePrice: 9500, quantity: 1 }, { menuId: 3, menuName: "크리스피 콜팝", basePrice: 6500, quantity: 1 }] },
+    { tableNo: "31", status: "PENDING", paymentMethod: "CARD" as const, minutesAgo: 2, items: [{ menuId: 1, menuName: "마라떡볶이", basePrice: 9500, quantity: 1 }, { menuId: 9, menuName: "콜라", basePrice: 2500, quantity: 2 }] },
+    { tableNo: "15", status: "PENDING", paymentMethod: "SAMSUNG_PAY" as const, minutesAgo: 6, items: [{ menuId: 3, menuName: "크리스피 콜팝", basePrice: 6500, quantity: 3 }, { menuId: 8, menuName: "제로 복숭아 아이스티", basePrice: 4300, quantity: 1 }] },
+    { tableNo: "7", status: "PREPARING", paymentMethod: "CARD" as const, minutesAgo: 19, items: [{ menuId: 2, menuName: "피자떡볶이", basePrice: 9500, quantity: 1 }] },
+    { tableNo: "22", status: "PREPARING", paymentMethod: "KAKAO_PAY" as const, minutesAgo: 25, items: [{ menuId: 1, menuName: "마라떡볶이", basePrice: 9500, quantity: 1 }, { menuId: 6, menuName: "감자튀김", basePrice: 6000, quantity: 1 }, { menuId: 9, menuName: "콜라", basePrice: 2500, quantity: 1 }] },
+    { tableNo: "3", status: "CONFIRMED", paymentMethod: "CARD" as const, minutesAgo: 30, items: [{ menuId: 5, menuName: "치즈볼", basePrice: 5500, quantity: 2 }] },
+    { tableNo: "18", status: "COMPLETED", paymentMethod: "NAVER_PAY" as const, minutesAgo: 45, items: [{ menuId: 11, menuName: "아메리카노", basePrice: 3500, quantity: 1 }, { menuId: 12, menuName: "자몽에이드", basePrice: 4500, quantity: 1 }] },
+    { tableNo: "11", status: "COMPLETED", paymentMethod: "CARD" as const, minutesAgo: 60, items: [{ menuId: 1, menuName: "마라떡볶이", basePrice: 9500, quantity: 1 }, { menuId: 3, menuName: "크리스피 콜팝", basePrice: 6500, quantity: 1 }] },
   ];
 
   for (const os of orderSeeds) {
@@ -370,6 +370,9 @@ async function main() {
     await prisma.order.create({
       data: {
         storeId: 1, tableId, status: os.status, totalPrice,
+        paymentMethod: os.paymentMethod,
+        paymentStatus: "COMPLETED",
+        paidAt: new Date(Date.now() - os.minutesAgo * 60 * 1000),
         orderedAt: new Date(Date.now() - os.minutesAgo * 60 * 1000),
         items: {
           create: os.items.map((item) => ({
@@ -422,6 +425,24 @@ async function main() {
   console.log("  Chat messages created");
 
   // ============================================
+  // 10. 쿠폰
+  // ============================================
+  console.log("\n10. Creating coupons...");
+  const couponsData = [
+    { code: "WELCOME", name: "신규 회원 1,000원 할인", discountAmount: 1000, minOrderAmount: 5000, maxUses: 1000 },
+    { code: "REDBUTTON", name: "레드버튼 출석 쿠폰 500원", discountAmount: 500, minOrderAmount: 0, maxUses: null },
+    { code: "BOARDGAME", name: "보드게임 데이 2,000원 할인", discountAmount: 2000, minOrderAmount: 10000, maxUses: 200, startDate: new Date("2025-01-01"), endDate: new Date("2025-12-31") },
+  ];
+  for (const c of couponsData) {
+    await prisma.coupon.upsert({
+      where: { code: c.code },
+      update: {},
+      create: c,
+    });
+  }
+  console.log("  3 coupons created");
+
+  // ============================================
   // Done!
   // ============================================
   console.log("\nSeed completed successfully!");
@@ -433,6 +454,7 @@ async function main() {
   console.log("   - 4 events");
   console.log("   - 10 table sessions, 7 orders");
   console.log("   - Chat messages for 5 tables");
+  console.log("   - 3 coupons");
 }
 
 main()

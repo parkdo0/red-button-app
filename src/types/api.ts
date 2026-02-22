@@ -132,10 +132,14 @@ export interface CreateOrderItemRequest {
   selectedOptionIds: number[];
 }
 
+export type PaymentMethod = "CARD" | "SAMSUNG_PAY" | "KAKAO_PAY" | "NAVER_PAY" | "CASH";
+export type PaymentStatus = "PENDING" | "COMPLETED" | "FAILED" | "REFUNDED";
+
 export interface CreateOrderRequest {
   storeId: number;
   tableId: number;
   memo?: string;
+  paymentMethod?: PaymentMethod;
   items: CreateOrderItemRequest[];
 }
 
@@ -158,6 +162,9 @@ export interface OrderResponse {
   tableId: number;
   status: OrderStatus;
   totalPrice: number;
+  paymentMethod: PaymentMethod | null;
+  paymentStatus: PaymentStatus;
+  paidAt: string | null;
   memo: string | null;
   orderedAt: string;
   items: OrderItemResponse[];

@@ -1,179 +1,260 @@
-# 🔴 레드버튼(RedButton) 태블릿 앱 클론
+# 🔴 레드버튼(Red Button) — 보드게임 카페 매장 운영 시스템
 
-레드버튼 보드게임 카페의 실제 태블릿 앱 핵심 기능 3가지를 클론 코딩하는 프로젝트.
+보드게임 카페 프랜차이즈 "레드버튼"의 통합 매장 운영 시스템.
+고객용 태블릿 앱, 매장 관리자, 본사 관리자를 하나의 Next.js 앱으로 구현합니다.
 
 ## 기술 스택
 
-| Layer     | Tech                    |
-| --------- | ----------------------- |
-| Framework | Next.js 16 (App Router) |
-| Language  | TypeScript              |
-| Styling   | Tailwind CSS 4          |
-| ORM       | Prisma 7                |
-| DB        | MySQL 8                 |
+| Layer     | Tech                           |
+| --------- | ------------------------------ |
+| Framework | Next.js 16 (App Router)        |
+| Language  | TypeScript (strict)            |
+| Styling   | Tailwind CSS 4                 |
+| ORM       | Prisma 5                       |
+| DB        | MySQL 8                        |
+| Auth      | jose (JWT) + bcryptjs + Cookie |
+| Realtime  | SSE (Server-Sent Events)       |
 
-## 구현 범위
+## 사용자 유형
 
-### 1. 게임 찾기 (Search & Filter)
-- 넷플릭스 스타일 가로 스크롤 추천 리스트
-- 검색바 (게임명, 설명, 카테고리 실시간 검색)
-- 사이드바 필터 (인원수, 장르, 난이도) → 실시간 필터링
-- 반응형 필터: 태블릿 가로모드 항상 표시, 세로모드 토글
-- Game ↔ Tag M:N 관계 필터링
+| 유형 | 진입 경로 | 인증 방식 |
+| --- | --- | --- |
+| 고객 태블릿 | `/` | 매장 선택 + PIN + 테이블 번호 |
+| 매장 관리자 | `/admin/store` | 아이디/비밀번호 로그인 |
+| 본사 관리자 | `/admin/hq` | 아이디/비밀번호 로그인 |
 
-### 2. 게임 상세 (Detail & Video)
-- 유튜브 영상 플레이어 (URL 파싱 → iframe 임베드)
-- 게임 정보 카드 (인원, 시간, 난이도, 장르)
-- 태그 기반 관련 게임 추천 (최대 4개)
-- 반응형 레이아웃 (가로: 2컬럼, 세로: 1컬럼)
+## 주요 기능
 
-### 3. F&B 주문 (Order System)
-- 탭 메뉴 → 메뉴 카드 → 옵션 모달 → 장바구니 → 주문 확인 → 주문
-- 옵션: 필수/선택, 단일/다중 선택, 최대 개수 제한
-- 장바구니: 우측 슬라이드 패널, 수량 변경/삭제/전체삭제
-- 주문 확인 모달 (로딩 스피너 포함)
-- 네비게이션 장바구니 뱃지 (페이지 이동 시에도 유지)
-- 주문 내역 페이지 (상태별 컬러 뱃지)
-- 토스트 알림 (성공/에러)
+### 고객 태블릿
 
-### 4. 부가 기능
-- 게임 타이머: 이용 시간 카운트업 (시작/일시정지/리셋)
-- 직원 호출: 확인 모달 → 호출 → 10초 쿨다운 (연속 호출 방지)
+- **게임 추천** — 넷플릭스 스타일 카테고리별 가로 스크롤, 태그 기반 추천
+- **게임 검색** — 이름(초성 포함) 검색, 장르/인원/난이도/시간 필터링
+- **게임 상세** — 유튜브 영상, 게임 정보, 관련 게임 추천
+- **F&B 주문** — 카테고리 탭, 옵션 모달, 장바구니, 결제
+- **카운터 쪽지** — SSE 실시간 양방향 채팅, 빠른 질문 버튼
+- **이용 정보** — Wi-Fi, 이용 안내, 고객 의견 제출
+- **이벤트** — 매장 이벤트/프로모션 조회
+- **게임 키트** — 벌칙 룰렛, 선 정하기, 팀 정하기
+- **쿠폰** — 쿠폰 코드 입력 및 사용
+- **직원 호출** — 확인 모달 + 10초 쿨다운
+
+### 매장 관리자
+
+- **대시보드** — 오늘의 매출, 주문 수, 테이블 현황
+- **주문 관리** — 실시간 주문 목록, 상태 변경
+- **카운터 쪽지** — SSE 실시간 채팅, 테이블별 스레드, 빠른 답변
+- **직원 호출** — 테이블별 호출 알림 관리
+- **테이블 관리** — 세션 시작/종료, 상태 모니터링
+- **게임 노출** — 매장별 게임 노출 여부 관리
+- **메뉴 관리** — 매장별 메뉴 활성화/비활성화, 가격 조정
+- **매장 설정** — 매장 기본 정보, Wi-Fi, 영업시간
+
+### 본사 관리자
+
+- **대시보드** — 전체 매장 매출 요약
+- **게임 관리** — CRUD, 이미지 업로드, 유튜브 URL
+- **메뉴 관리** — CRUD, 옵션 그룹, 이미지 업로드
+- **추천 관리** — 추천 카테고리 및 게임 구성
+- **이벤트 관리** — 이벤트 CRUD
+- **태그 관리** — 게임 태그 CRUD
+- **매장 현황** — 전체 매장 목록 및 상태
+- **쿠폰 관리** — 쿠폰 생성/수정/비활성화
+- **고객 의견** — 피드백 조회
 
 ## 프로젝트 구조
 
 ```
 src/
 ├── app/
-│   ├── api/
-│   │   ├── categories/     # GET /api/categories
-│   │   ├── games/          # GET /api/games, GET /api/games/:id
-│   │   ├── menus/          # GET /api/menus
-│   │   └── orders/         # GET/POST /api/orders
-│   ├── games/[id]/         # 게임 상세 (loading, not-found)
-│   ├── order/              # F&B 주문 (loading)
-│   │   └── history/        # → /orders 리다이렉트
-│   ├── orders/             # 주문 내역 (loading)
-│   ├── error.tsx           # 전역 에러 바운더리
-│   ├── not-found.tsx       # 404 페이지
-│   ├── loading.tsx         # 메인 로딩 스켈레톤
-│   ├── layout.tsx          # 루트 (네비 + Toast + Cart)
-│   └── page.tsx            # 메인 (게임 찾기)
+│   ├── (고객 페이지)
+│   │   ├── page.tsx              # 게임 추천 (메인)
+│   │   ├── search/               # 게임 검색
+│   │   ├── games/[id]/           # 게임 상세
+│   │   ├── order/                # F&B 주문
+│   │   ├── orders/               # 주문 내역
+│   │   ├── chat/                 # 카운터 쪽지 (SSE)
+│   │   ├── info/                 # 이용 정보 + 고객 의견
+│   │   ├── events/               # 이벤트
+│   │   ├── kit/                  # 게임 키트
+│   │   └── coupon/               # 쿠폰 사용
+│   │
+│   ├── admin/
+│   │   ├── layout.tsx            # 관리자 공통 레이아웃
+│   │   ├── hq/                   # 본사 관리자
+│   │   │   ├── page.tsx          # 대시보드
+│   │   │   ├── games/            # 게임 CRUD
+│   │   │   ├── menus/            # 메뉴 CRUD
+│   │   │   ├── recommend/        # 추천 관리
+│   │   │   ├── events/           # 이벤트 관리
+│   │   │   ├── tags/             # 태그 관리
+│   │   │   ├── stores/           # 매장 현황
+│   │   │   ├── coupons/          # 쿠폰 관리
+│   │   │   └── feedback/         # 고객 의견
+│   │   └── store/                # 매장 관리자
+│   │       ├── page.tsx          # 대시보드
+│   │       ├── orders/           # 주문 관리
+│   │       ├── chat/             # 카운터 쪽지 (SSE)
+│   │       ├── tables/           # 테이블 관리
+│   │       ├── games/            # 게임 노출
+│   │       ├── menus/            # 메뉴 관리
+│   │       └── settings/         # 매장 설정
+│   │
+│   ├── api/                      # REST API (25개 엔드포인트)
+│   │   ├── auth/                 # 로그인, 로그아웃, 세션
+│   │   ├── chat/                 # 채팅 CRUD
+│   │   │   └── stream/           # SSE 실시간 스트림
+│   │   ├── games/, menus/, orders/, ...
+│   │   ├── coupons/              # 쿠폰 검증/사용
+│   │   ├── feedback/             # 고객 의견
+│   │   └── upload/               # 이미지 업로드
+│   │
+│   └── login/                    # 통합 로그인 페이지
+│
 ├── components/
-│   ├── cart/
-│   │   ├── CartProvider.tsx      # Context 장바구니 상태관리
-│   │   ├── CartBar.tsx           # 하단 플로팅 바
-│   │   ├── CartPanel.tsx         # 우측 슬라이드 패널 + API 연동
-│   │   ├── OptionModal.tsx       # 옵션 선택 모달 + 토스트
-│   │   └── OrderConfirmModal.tsx # 주문 확인 모달 + 로딩
-│   ├── GameCard.tsx              # 게임 카드 (애니메이션)
-│   ├── GameCategoryRow.tsx       # 카테고리별 가로 스크롤 행
-│   ├── GameFilterSidebar.tsx     # 필터 사이드바 (반응형 토글)
-│   ├── GameTimer.tsx             # 게임 타이머 (카운트업)
-│   ├── Navigation.tsx            # 좌측 네비 + 뱃지 + 타이머 + 호출
-│   ├── StaffCallButton.tsx       # 직원 호출 버튼 + 확인 모달
-│   ├── Skeleton.tsx              # 로딩 스켈레톤
-│   ├── ToastProvider.tsx         # 토스트 알림 (성공/에러/정보)
-│   └── YoutubePlayer.tsx         # 유튜브 임베드 플레이어
-├── data/
-│   ├── mock.ts                   # Mock 데이터 (게임 8, 메뉴 10)
-│   └── mock-orders.ts           # Mock 주문 내역
+│   ├── cart/                     # 장바구니 (Provider, Bar, Panel, Modal)
+│   ├── admin/                    # 관리자 전용 컴포넌트 (GameForm)
+│   ├── Navigation.tsx            # 고객 좌측 네비게이션
+│   ├── SessionProvider.tsx       # 인증 세션 Context
+│   ├── GameTimer.tsx             # 이용 시간 타이머
+│   ├── StaffCallButton.tsx       # 직원 호출
+│   ├── ToastProvider.tsx         # 토스트 알림
+│   └── ...
+│
 ├── lib/
-│   ├── api.ts                    # fetchApi / postApi 유틸
-│   └── prisma.ts                 # Prisma Client 싱글톤
-└── types/
-    ├── api.ts                    # API 요청/응답 타입 정의
-    └── index.ts                  # barrel export
+│   ├── prisma.ts                 # Prisma Client 싱글톤
+│   ├── auth.ts                   # JWT 인증 유틸
+│   ├── api.ts                    # fetchApi / postApi 공통 함수
+│   └── queries.ts                # DB 쿼리 함수
+│
+├── data/                         # 상수 (카테고리, 메뉴 탭 등)
+└── types/                        # TypeScript 타입 정의
 ```
 
-## ERD (12 모델)
+## DB 스키마 (24 모델)
 
 ```
-Store 1──N Table
-  │           │
-  └──N Order N┘
-       │
-       1──N OrderItem ──N OrderItemOption
-              │                  │
-              N                  N
-              │                  │
-            Menu ──1 MenuOptionGroup ──1 MenuOption
-              │
-              N
-           Category (type: GAME | FOOD)
-              │
-              N
-            Game ──M:N── Tag (via GameTag)
+AdminUser              — 관리자 계정 (HQ/STORE)
+Store ──1:N── Table    — 매장, 테이블
+            └── TableSession    — 테이블 이용 세션
+
+Category ──1:N── Game  — 카테고리(GAME/FOOD), 게임
+Game ──M:N── Tag       — 게임 ↔ 태그 (via GameTag)
+Game ──1:N── GameHashtag
+StoreGame              — 매장별 게임 노출
+
+RecommendCategory ──1:N── RecommendCategoryItem  — 추천 그룹
+
+Menu ──1:N── MenuOptionGroup ──1:N── MenuOption   — 메뉴, 옵션
+StoreMenu              — 매장별 메뉴 설정
+
+Order ──1:N── OrderItem ──1:N── OrderItemOption    — 주문
+
+ChatMessage            — 채팅 메시지 (SSE 실시간)
+Feedback               — 고객 의견
+Coupon ──1:N── CouponUsage  — 쿠폰 및 사용 내역
+Event                  — 이벤트/프로모션
 ```
 
 ## 로컬 개발
+
+### 사전 요구사항
+
+- Node.js 18+
+- MySQL 8
+
+### 설치 및 실행
 
 ```bash
 # 1. 의존성 설치
 npm install
 
-# 2. Mock 데이터로 바로 실행 (DB 없이)
-npm run dev
+# 2. 환경 변수 설정
+cp .env.example .env
+# .env 파일에서 DATABASE_URL 수정
 
-# 3. DB 연동 시 (MySQL 필요)
-# .env의 DATABASE_URL을 로컬 MySQL에 맞게 수정
-npx prisma migrate dev --name init
+# 3. DB 스키마 적용 + 시드 데이터
+npx prisma db push
 npx prisma db seed
+
+# 4. 개발 서버 실행
 npm run dev
 ```
 
-## 라우트
+### 환경 변수
 
-| 경로 | 설명 |
-| --- | --- |
-| `/` | 게임 찾기 (검색 + 필터 + 카테고리별 리스트) |
-| `/games/:id` | 게임 상세 (유튜브 + 정보 + 추천) |
-| `/order` | F&B 주문 (탭 + 옵션 모달 + 장바구니) |
-| `/orders` | 주문 내역 (상태별 뱃지) |
+```env
+DATABASE_URL="mysql://root:root@localhost:3306/redbutton"
+```
+
+### 시드 데이터
+
+`npx prisma db seed` 실행 시 다음 데이터가 생성됩니다:
+
+- 본사 관리자 계정 (admin / admin)
+- 매장 관리자 계정 (store1 / store1)
+- 매장 2개 (수원점, 강남점) + 테이블
+- 게임 약 40종 + 태그, 해시태그
+- F&B 메뉴 + 옵션
+- 추천 카테고리
+- 이벤트, 쿠폰
 
 ## API 엔드포인트
 
+### 인증
+
 | Method | Path | 설명 |
 | --- | --- | --- |
-| GET | `/api/categories` | 카테고리 목록 (필터: type) |
-| GET | `/api/games` | 게임 목록 (필터: playerCount, genre, difficulty, search, category) |
-| GET | `/api/games/:id` | 게임 상세 + 관련 게임 |
-| GET | `/api/menus` | F&B 메뉴 + 옵션 (필터: category) |
-| POST | `/api/orders` | 주문 생성 (트랜잭션, 스냅샷 저장) |
-| GET | `/api/orders` | 주문 목록 (필터: storeId, tableId, status) |
+| POST | `/api/auth/login` | 관리자 로그인 |
+| POST | `/api/auth/logout` | 로그아웃 |
+| GET | `/api/auth/session` | 세션 정보 |
+| GET | `/api/auth/stores` | 매장 목록 (태블릿 설정용) |
+| POST | `/api/auth/tables` | 태블릿 테이블 설정 |
 
-## Mock → DB 전환 가이드
+### 게임
 
-현재 UI는 `src/data/mock.ts`의 Mock 데이터로 동작합니다.
-DB 연동 시 각 페이지에서 Mock import를 `fetchApi()` 호출로 교체하면 됩니다:
+| Method | Path | 설명 |
+| --- | --- | --- |
+| GET | `/api/games` | 게임 목록 (검색, 필터) |
+| GET/PUT/DELETE | `/api/games/[id]` | 게임 상세/수정/삭제 |
+| GET/POST | `/api/categories` | 카테고리 CRUD |
+| GET/POST | `/api/tags` | 태그 CRUD |
+| GET/POST | `/api/recommend` | 추천 카테고리 CRUD |
 
-```typescript
-// Before (Mock)
-import { MOCK_GAMES } from "@/data/mock";
-const games = MOCK_GAMES;
+### 주문/메뉴
 
-// After (API)
-import { fetchApi } from "@/lib/api";
-import type { GameListItem } from "@/types/api";
-const games = await fetchApi<GameListItem[]>("/api/games");
+| Method | Path | 설명 |
+| --- | --- | --- |
+| GET | `/api/menus` | 메뉴 목록 (옵션 포함) |
+| POST | `/api/orders` | 주문 생성 |
+| GET | `/api/orders` | 주문 목록 |
+| PATCH | `/api/orders/[id]` | 주문 상태 변경 |
+| POST | `/api/orders/[id]/payment` | 결제 처리 |
+
+### 실시간 채팅
+
+| Method | Path | 설명 |
+| --- | --- | --- |
+| GET | `/api/chat` | 채팅 스레드/메시지 조회 |
+| POST | `/api/chat` | 메시지 전송 |
+| GET | `/api/chat/stream` | SSE 실시간 스트림 |
+
+### 기타
+
+| Method | Path | 설명 |
+| --- | --- | --- |
+| GET/POST | `/api/coupons` | 쿠폰 검증/생성 |
+| POST | `/api/feedback` | 고객 의견 제출 |
+| POST | `/api/upload` | 이미지 업로드 |
+| GET | `/api/dashboard/hq` | 본사 대시보드 데이터 |
+| GET | `/api/dashboard/store` | 매장 대시보드 데이터 |
+
+## 빌드
+
+```bash
+npm run build   # 58 페이지 빌드
+npm start       # 프로덕션 서버
 ```
 
-## 작업 진행
+## 라이선스
 
-| Phase | 작업 | 상태 |
-| ----- | --- | ---- |
-| 1-1 | 프로젝트 초기화 (Next.js + TS + Tailwind) | ✅ |
-| 1-2 | Prisma 스키마 설계 (12 모델) | ✅ |
-| 1-3 | Seed 데이터 | ✅ |
-| 1-4 | 전체 레이아웃 + 네비게이션 | ✅ |
-| 2-1 | API 라우트 (게임/메뉴/주문/카테고리) | ✅ |
-| 2-2 | F&B 주문 UI (옵션모달 + 장바구니 + 주문확인) | ✅ |
-| 2-3 | 게임 찾기 UI (검색 + 필터 사이드바) | ✅ |
-| 2-4 | 게임 상세 (유튜브 + 추천) | ✅ |
-| 2-5 | 주문 내역 페이지 | ✅ |
-| 3-1 | 태블릿 반응형 + 터치 최적화 | ✅ |
-| 3-2 | 에러 핸들링 / UX (토스트, 스켈레톤, 404, 에러 바운더리) | ✅ |
-| 3-3 | 전역 장바구니 + 네비 뱃지 | ✅ |
-| 3-4 | API 타입 정의 + fetch 유틸 | ✅ |
-| 4-1 | 게임 타이머 (이용 시간 측정) | ✅ |
-| 4-2 | 직원 호출 (확인 모달 + 쿨다운) | ✅ |
+Private

@@ -16,6 +16,8 @@ export default function InfoClient({ storeName, tableNo, wifiId, wifiPw, checkIn
   const [showGuide, setShowGuide] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedback, setFeedback] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   // 이용 시간 카운트업 (1분마다 증가)
   useEffect(() => {
@@ -150,18 +152,34 @@ export default function InfoClient({ storeName, tableNo, wifiId, wifiPw, checkIn
               className="rb-input min-h-[120px] resize-none p-3 text-sm"
             />
             <button
-              onClick={() => {
-                setFeedback("");
-                setShowFeedback(false);
+              onClick={async () => {
+                if (!feedback.trim() || submitting) return;
+                setSubmitting(true);
+                try {
+                  const res = await fetch("/api/feedback", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ content: feedback.trim() }),
+                  });
+                  if (res.ok) {
+                    setSubmitted(true);
+                    setFeedback("");
+                    setTimeout(() => {
+                      setShowFeedback(false);
+                      setSubmitted(false);
+                    }, 1500);
+                  }
+                } catch { /* ignore */ }
+                finally { setSubmitting(false); }
               }}
-              disabled={!feedback.trim()}
+              disabled={!feedback.trim() || submitting}
               className={`w-full rounded-2xl py-3 text-sm font-bold transition-all touch-feedback ${
-                feedback.trim()
+                feedback.trim() && !submitting
                   ? "rb-btn-primary"
                   : "bg-bg-card text-text-muted cursor-not-allowed"
               }`}
             >
-              제출하기
+              {submitted ? "✅ 제출 완료!" : submitting ? "제출 중..." : "제출하기"}
             </button>
           </div>
         </Modal>

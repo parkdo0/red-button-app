@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   FILTER_OPTIONS,
@@ -9,6 +9,12 @@ import {
   type Difficulty,
   type GameTag,
 } from "@/data/constants";
+
+interface DbTag {
+  id: number;
+  group: string;
+  value: string;
+}
 
 interface Props {
   /** 수정 모드일 때 기존 게임 데이터 전달 */
@@ -116,12 +122,67 @@ export default function GameForm({ initialData, mode }: Props) {
     return Object.keys(newErrors).length === 0;
   };
 
-  /** 저장 (Mock - 실제로는 API 호출) */
-  const handleSubmit = () => {
-    if (!validate()) return;
-    // TODO: API 호출 (POST /api/admin/games or PUT /api/admin/games/:id)
-    alert(`${mode === "create" ? "등록" : "수정"} 완료! (Mock)`);
-    router.push("/admin/hq/games");
+  // DB 태그 목록 로드
+  const [dbTags, setDbTags] = useState<DbTag[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/tags")
+      .then((r) => r.ok ? r.json() : [])
+      .then((tags: DbTag[]) => setDbTags(tags))
+      .catch(() => {});
+  }, []);
+
+  /** 저장 — 실제 API 호출 */
+  const handleSubmit = async () => {
+    if (!validate() || submitting) return;
+    setSubmitting(true);
+
+    try {
+      // 선택된 태그 이름 → tagId 매핑
+      const tagIds = dbTags
+        .filter((t) =>
+          (t.group === "genre" && form.selectedGenres.includes(t.value)) ||
+          (t.group === "player_count" && form.selectedPlayers.includes(t.value))
+        )
+        .map((t) => t.id);
+
+      const payload = {
+        title: form.title,
+        description: form.description,
+        thumbnailUrl: form.thumbnailUrl || null,
+        videoUrl: form.videoUrl || null,
+        minPlayers: form.minPlayers,
+        maxPlayers: form.maxPlayers,
+        recommendedPlayers: form.recommendedPlayers,
+        playTime: form.playTime,
+        playTimeCategory: form.playTimeCategory,
+        difficulty: form.difficulty,
+        defaultShelfLoc: form.shelfLocation,
+        tagIds,
+        hashtags: form.hashtags.map((h) => h.startsWith("#") ? h : `#${h}`),
+      };
+
+      const url = mode === "create" ? "/api/games" : `/api/games/${initialData?.id}`;
+      const method = mode === "create" ? "POST" : "PATCH";
+
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.ok) {
+        router.push("/admin/hq/games");
+      } else {
+        const err = await res.json();
+        alert(err.error ?? "저장에 실패했습니다.");
+      }
+    } catch {
+      alert("네트워크 오류가 발생했습니다.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -144,9 +205,10 @@ export default function GameForm({ initialData, mode }: Props) {
             </button>
             <button
               onClick={handleSubmit}
-              className="rounded-lg bg-red-600 px-5 py-2 text-sm font-bold text-white hover:bg-red-700"
+              disabled={submitting}
+              className="rounded-lg bg-red-600 px-5 py-2 text-sm font-bold text-white hover:bg-red-700 disabled:opacity-50"
             >
-              {mode === "create" ? "등록" : "저장"}
+              {submitting ? "저장 중..." : mode === "create" ? "등록" : "저장"}
             </button>
           </div>
         </div>
@@ -172,14 +234,45 @@ export default function GameForm({ initialData, mode }: Props) {
             />
           </Field>
           <div className="grid grid-cols-2 gap-4">
-            <Field label="썸네일 URL">
-              <input
-                type="url"
-                value={form.thumbnailUrl}
-                onChange={(e) => updateField("thumbnailUrl", e.target.value)}
-                placeholder="/images/games/example.jpg"
-                className={inputClass()}
-              />
+            <Field label="썸네일 이미지">
+              <div className="flex flex-col gap-2">
+                {form.thumbnailUrl && (
+                  <div className="relative h-24 w-24 rounded-lg border border-gray-200 overflow-hidden bg-gray-50">
+                    <img src={form.thumbnailUrl} alt="" className="h-full w-full object-cover" />
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <label className="cursor-pointer rounded-lg bg-gray-100 px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-200">
+                    파일 선택
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const fd = new FormData();
+                        fd.append("file", file);
+                        fd.append("folder", "games");
+                        try {
+                          const res = await fetch("/api/upload", { method: "POST", body: fd });
+                          if (res.ok) {
+                            const { url } = await res.json();
+                            updateField("thumbnailUrl", url);
+                          }
+                        } catch {}
+                      }}
+                    />
+                  </label>
+                  <input
+                    type="url"
+                    value={form.thumbnailUrl}
+                    onChange={(e) => updateField("thumbnailUrl", e.target.value)}
+                    placeholder="또는 URL 직접 입력"
+                    className={inputClass() + " flex-1"}
+                  />
+                </div>
+              </div>
             </Field>
             <Field label="영상 URL (YouTube)">
               <input
