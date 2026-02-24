@@ -138,6 +138,8 @@ export async function POST(request: NextRequest) {
 /**
  * GET /api/orders?storeId=1&tableId=1&status=PENDING
  * 주문 목록 조회
+ * - 고객(TABLE): 현재 세션 checkInAt 이후 주문만
+ * - 관리자: 전체 주문
  */
 export async function GET(request: NextRequest) {
   try {
@@ -151,11 +153,24 @@ export async function GET(request: NextRequest) {
     const tableId = searchParams.get("tableId");
     const status = searchParams.get("status");
 
+    // 고객(TABLE) 요청 시 활성 세션 기준 필터링
+    let sessionCheckInAt: Date | undefined;
+    if (session.role === "TABLE" && session.storeId && session.tableId) {
+      const activeSession = await prisma.tableSession.findFirst({
+        where: { storeId: session.storeId, tableId: session.tableId, checkOutAt: null },
+        orderBy: { checkInAt: "desc" },
+      });
+      if (activeSession) {
+        sessionCheckInAt = activeSession.checkInAt;
+      }
+    }
+
     const orders = await prisma.order.findMany({
       where: {
         ...(storeId ? { storeId: Number(storeId) } : {}),
         ...(tableId ? { tableId: Number(tableId) } : {}),
         ...(status ? { status: status as "PENDING" | "CONFIRMED" | "PREPARING" | "COMPLETED" | "CANCELLED" } : {}),
+        ...(sessionCheckInAt ? { orderedAt: { gte: sessionCheckInAt } } : {}),
       },
       include: {
         items: {

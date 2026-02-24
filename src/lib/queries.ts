@@ -208,8 +208,18 @@ export async function getOrdersByTable(storeId: number, tableNo: string) {
   });
   if (!table) return [];
 
+  // 활성 세션의 checkInAt 이후 주문만 반환
+  const activeSession = await prisma.tableSession.findFirst({
+    where: { storeId, tableId: table.id, checkOutAt: null },
+    orderBy: { checkInAt: "desc" },
+  });
+
   return prisma.order.findMany({
-    where: { storeId, tableId: table.id },
+    where: {
+      storeId,
+      tableId: table.id,
+      ...(activeSession ? { orderedAt: { gte: activeSession.checkInAt } } : {}),
+    },
     include: {
       items: { include: { options: true } },
     },
@@ -219,8 +229,28 @@ export async function getOrdersByTable(storeId: number, tableNo: string) {
 
 // ─── 채팅 ───
 export async function getChatMessages(storeId: number, tableNo: string) {
-  return prisma.chatMessage.findMany({
+  // 활성 세션의 checkInAt 이후 메시지만 반환
+  const table = await prisma.table.findFirst({
     where: { storeId, tableNo },
+  });
+
+  let checkInAt: Date | undefined;
+  if (table) {
+    const activeSession = await prisma.tableSession.findFirst({
+      where: { storeId, tableId: table.id, checkOutAt: null },
+      orderBy: { checkInAt: "desc" },
+    });
+    if (activeSession) {
+      checkInAt = activeSession.checkInAt;
+    }
+  }
+
+  return prisma.chatMessage.findMany({
+    where: {
+      storeId,
+      tableNo,
+      ...(checkInAt ? { createdAt: { gte: checkInAt } } : {}),
+    },
     orderBy: { createdAt: "asc" },
   });
 }

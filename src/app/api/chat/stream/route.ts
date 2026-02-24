@@ -22,6 +22,23 @@ export async function GET(request: NextRequest) {
   let alive = true;
   let pollCount = 0;
 
+  // 고객 모드: 활성 세션의 checkInAt 이후 메시지만 스트리밍
+  let sessionCheckInAt: Date | undefined;
+  if (!isAdmin) {
+    const table = await prisma.table.findFirst({
+      where: { storeId, tableNo },
+    });
+    if (table) {
+      const activeSession = await prisma.tableSession.findFirst({
+        where: { storeId, tableId: table.id, checkOutAt: null },
+        orderBy: { checkInAt: "desc" },
+      });
+      if (activeSession) {
+        sessionCheckInAt = activeSession.checkInAt;
+      }
+    }
+  }
+
   const stream = new ReadableStream({
     async start(controller) {
       const encoder = new TextEncoder();
@@ -59,7 +76,13 @@ export async function GET(request: NextRequest) {
       // 초기 lastId 설정
       try {
         const latest = await prisma.chatMessage.findFirst({
-          where: isAdmin ? { storeId } : { storeId, tableNo },
+          where: isAdmin
+            ? { storeId }
+            : {
+                storeId,
+                tableNo,
+                ...(sessionCheckInAt ? { createdAt: { gte: sessionCheckInAt } } : {}),
+              },
           orderBy: { id: "desc" },
           select: { id: true },
         });
@@ -85,7 +108,12 @@ export async function GET(request: NextRequest) {
           try {
             const where = isAdmin
               ? { storeId, id: { gt: lastId } }
-              : { storeId, tableNo, id: { gt: lastId } };
+              : {
+                  storeId,
+                  tableNo,
+                  id: { gt: lastId },
+                  ...(sessionCheckInAt ? { createdAt: { gte: sessionCheckInAt } } : {}),
+                };
 
             const newMessages = await prisma.chatMessage.findMany({
               where,

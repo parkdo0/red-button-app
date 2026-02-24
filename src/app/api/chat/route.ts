@@ -49,8 +49,24 @@ export async function GET(request: NextRequest) {
     }
 
     // tableNo 있으면 → 특정 테이블 메시지 목록
+    // 고객(TABLE) 요청 시 활성 세션 기준 필터링
+    let sessionCheckInAt: Date | undefined;
+    if (session.role === "TABLE" && session.storeId && session.tableId) {
+      const activeSession = await prisma.tableSession.findFirst({
+        where: { storeId: session.storeId, tableId: session.tableId, checkOutAt: null },
+        orderBy: { checkInAt: "desc" },
+      });
+      if (activeSession) {
+        sessionCheckInAt = activeSession.checkInAt;
+      }
+    }
+
     const messages = await prisma.chatMessage.findMany({
-      where: { storeId, tableNo },
+      where: {
+        storeId,
+        tableNo,
+        ...(sessionCheckInAt ? { createdAt: { gte: sessionCheckInAt } } : {}),
+      },
       orderBy: { createdAt: "asc" },
     });
 
