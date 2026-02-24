@@ -13,9 +13,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "인증이 필요합니다." }, { status: 401 });
     }
 
-    const storeId = Number(request.nextUrl.searchParams.get("storeId"));
-    if (!storeId) {
-      return NextResponse.json({ error: "storeId는 필수입니다." }, { status: 400 });
+    // 역할 체크: HQ_ADMIN 또는 STORE_ADMIN만 허용
+    if (session.role !== "HQ_ADMIN" && session.role !== "STORE_ADMIN") {
+      return NextResponse.json({ error: "관리자 권한이 필요합니다." }, { status: 403 });
+    }
+
+    // STORE_ADMIN은 자기 매장만 접근 가능 (쿼리 파라미터 무시)
+    let storeId: number;
+    if (session.role === "STORE_ADMIN") {
+      storeId = session.storeId!;
+    } else {
+      // HQ_ADMIN은 쿼리 파라미터로 매장 지정
+      storeId = Number(request.nextUrl.searchParams.get("storeId"));
+      if (!storeId) {
+        return NextResponse.json({ error: "storeId는 필수입니다." }, { status: 400 });
+      }
     }
 
     // 오늘 날짜 범위

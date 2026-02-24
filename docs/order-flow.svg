@@ -1,0 +1,156 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 580" font-family="'Segoe UI',system-ui,sans-serif">
+  <defs>
+    <filter id="s" x="-4%" y="-4%" width="108%" height="108%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.1"/>
+    </filter>
+    <marker id="a" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#6b7280"/></marker>
+    <marker id="ar" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill="#dc2626"/></marker>
+  </defs>
+
+  <rect width="960" height="580" rx="16" fill="#fafafa"/>
+  <text x="480" y="36" text-anchor="middle" font-size="20" font-weight="700" fill="#111">주문 플로우 &amp; 트랜잭션</text>
+
+  <!-- Customer Side -->
+  <rect x="30" y="52" width="440" height="516" rx="12" fill="#fff7ed" fill-opacity="0.5" stroke="#fed7aa" stroke-width="1"/>
+  <text x="250" y="72" text-anchor="middle" font-size="12" font-weight="700" fill="#c2410c">고객 태블릿 (클라이언트)</text>
+
+  <!-- Step 1: Menu load -->
+  <g filter="url(#s)">
+    <rect x="60" y="86" width="380" height="40" rx="8" fill="#fff"/>
+    <text x="250" y="107" text-anchor="middle" font-size="11" fill="#374151"><tspan font-weight="700">① 페이지 로드</tspan> — Server Component: getMenus(storeId)</text>
+    <text x="250" y="120" text-anchor="middle" font-size="9" fill="#9ca3af">Menu + StoreMenu(매장별 가격/품절) + OptionGroup + Option</text>
+  </g>
+  <line x1="250" y1="126" x2="250" y2="142" stroke="#6b7280" stroke-width="1.2" marker-end="url(#a)"/>
+
+  <!-- Step 2: Menu click -->
+  <g filter="url(#s)">
+    <rect x="60" y="142" width="380" height="40" rx="8" fill="#fff"/>
+    <text x="250" y="163" text-anchor="middle" font-size="11" fill="#374151"><tspan font-weight="700">② 메뉴 클릭</tspan> — 옵션 없으면 바로 장바구니, 있으면 OptionModal</text>
+    <text x="250" y="176" text-anchor="middle" font-size="9" fill="#9ca3af">CartProvider.addItem(menu, selectedOptions, quantity)</text>
+  </g>
+  <line x1="250" y1="182" x2="250" y2="198" stroke="#6b7280" stroke-width="1.2" marker-end="url(#a)"/>
+
+  <!-- Step 3: Cart -->
+  <g filter="url(#s)">
+    <rect x="60" y="198" width="380" height="52" rx="8" fill="#fff"/>
+    <text x="250" y="219" text-anchor="middle" font-size="11" fill="#374151"><tspan font-weight="700">③ 장바구니</tspan> — 우측 40% Split View 패널</text>
+    <text x="250" y="234" text-anchor="middle" font-size="9" fill="#9ca3af">cartId = menuId:옵션조합 → 같은 메뉴+다른 옵션 = 별도 항목</text>
+    <text x="250" y="246" text-anchor="middle" font-size="9" fill="#9ca3af">subTotal = (basePrice + 옵션합) × quantity</text>
+  </g>
+  <line x1="250" y1="250" x2="250" y2="266" stroke="#6b7280" stroke-width="1.2" marker-end="url(#a)"/>
+
+  <!-- Step 4: Confirm + Payment -->
+  <g filter="url(#s)">
+    <rect x="60" y="266" width="380" height="40" rx="8" fill="#fff"/>
+    <text x="250" y="287" text-anchor="middle" font-size="11" fill="#374151"><tspan font-weight="700">④ 주문 확인</tspan> → <tspan font-weight="700">결제 수단 선택</tspan></text>
+    <text x="250" y="300" text-anchor="middle" font-size="9" fill="#9ca3af">카드 · 삼성페이 · 카카오페이 · 네이버페이 · 현금</text>
+  </g>
+  <line x1="250" y1="306" x2="250" y2="322" stroke="#6b7280" stroke-width="1.2" marker-end="url(#a)"/>
+
+  <!-- Step 5: API Call -->
+  <g filter="url(#s)">
+    <rect x="60" y="322" width="380" height="40" rx="8" fill="#fef2f2" stroke="#fca5a5" stroke-width="1"/>
+    <text x="250" y="343" text-anchor="middle" font-size="11" font-weight="700" fill="#dc2626">⑤ orderApi.create(body)</text>
+    <text x="250" y="356" text-anchor="middle" font-size="9" fill="#ef4444">POST /api/orders → { items: [{ menuId, qty, optionIds }] }</text>
+  </g>
+
+  <!-- Arrow to server -->
+  <line x1="440" y1="342" x2="505" y2="342" stroke="#dc2626" stroke-width="2" marker-end="url(#ar)"/>
+
+  <!-- Server Side -->
+  <rect x="500" y="52" width="440" height="516" rx="12" fill="#f0f9ff" fill-opacity="0.5" stroke="#93c5fd" stroke-width="1"/>
+  <text x="720" y="72" text-anchor="middle" font-size="12" font-weight="700" fill="#1e40af">API Route — 서버 (트랜잭션)</text>
+
+  <!-- Session check -->
+  <g filter="url(#s)">
+    <rect x="530" y="86" width="380" height="36" rx="8" fill="#fef3c7"/>
+    <text x="720" y="107" text-anchor="middle" font-size="11" font-weight="600" fill="#92400e">🔒 getApiSession(request) — 쿠키에서 storeId, tableId 추출</text>
+    <text x="720" y="118" text-anchor="middle" font-size="9" fill="#a16207">클라이언트가 보낸 storeId/tableId 무시 → 세션 값만 신뢰</text>
+  </g>
+
+  <!-- Transaction block -->
+  <rect x="530" y="136" width="380" height="420" rx="10" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.5" stroke-dasharray="6,3"/>
+  <text x="720" y="158" text-anchor="middle" font-size="12" font-weight="700" fill="#1e40af">prisma.$transaction(async (tx) =&gt; { })</text>
+  <text x="905" y="158" font-size="8" fill="#dc2626" font-weight="600">실패 시 전체 롤백</text>
+
+  <!-- Tx Step 1 -->
+  <g filter="url(#s)">
+    <rect x="550" y="170" width="340" height="32" rx="6" fill="#fff"/>
+    <text x="720" y="191" text-anchor="middle" font-size="10" fill="#374151"><tspan font-weight="700">1.</tspan> tx.order.create({ storeId, tableId, totalPrice: 0 })</text>
+  </g>
+  <line x1="720" y1="202" x2="720" y2="214" stroke="#6b7280" stroke-width="1" marker-end="url(#a)"/>
+
+  <!-- Tx Step 2 -->
+  <g filter="url(#s)">
+    <rect x="550" y="214" width="340" height="32" rx="6" fill="#fff"/>
+    <text x="720" y="235" text-anchor="middle" font-size="10" fill="#374151"><tspan font-weight="700">2.</tspan> for (item) → tx.menu.findUnique({ id: menuId })</text>
+  </g>
+  <line x1="720" y1="246" x2="720" y2="258" stroke="#6b7280" stroke-width="1" marker-end="url(#a)"/>
+
+  <!-- Tx Step 3: validation -->
+  <g filter="url(#s)">
+    <rect x="550" y="258" width="340" height="32" rx="6" fill="#fef2f2"/>
+    <text x="720" y="279" text-anchor="middle" font-size="10" fill="#991b1b"><tspan font-weight="700">3.</tspan> 검증: menu 존재? isActive? → 실패 시 throw (롤백)</text>
+  </g>
+  <line x1="720" y1="290" x2="720" y2="302" stroke="#6b7280" stroke-width="1" marker-end="url(#a)"/>
+
+  <!-- Tx Step 4: price calc -->
+  <g filter="url(#s)">
+    <rect x="550" y="302" width="340" height="32" rx="6" fill="#fff"/>
+    <text x="720" y="323" text-anchor="middle" font-size="10" fill="#374151"><tspan font-weight="700">4.</tspan> 가격 계산: (basePrice + 옵션합) × quantity</text>
+  </g>
+  <line x1="720" y1="334" x2="720" y2="346" stroke="#6b7280" stroke-width="1" marker-end="url(#a)"/>
+
+  <!-- Tx Step 5: snapshot -->
+  <g filter="url(#s)">
+    <rect x="550" y="346" width="340" height="48" rx="6" fill="#d1fae5"/>
+    <text x="720" y="366" text-anchor="middle" font-size="10" font-weight="700" fill="#065f46">5. ★ 스냅샷 저장</text>
+    <text x="720" y="382" text-anchor="middle" font-size="9" fill="#059669">OrderItem: menuName, basePrice 복사</text>
+    <text x="720" y="394" text-anchor="middle" font-size="9" fill="#059669">OrderItemOption: optionName, extraPrice 복사</text>
+  </g>
+  <line x1="720" y1="394" x2="720" y2="406" stroke="#6b7280" stroke-width="1" marker-end="url(#a)"/>
+
+  <!-- Tx Step 6: total -->
+  <g filter="url(#s)">
+    <rect x="550" y="406" width="340" height="32" rx="6" fill="#fff"/>
+    <text x="720" y="427" text-anchor="middle" font-size="10" fill="#374151"><tspan font-weight="700">6.</tspan> tx.order.update({ totalPrice }) — 총액 확정</text>
+  </g>
+
+  <!-- Snapshot note -->
+  <g filter="url(#s)">
+    <rect x="550" y="456" width="340" height="44" rx="6" fill="#fefce8" stroke="#eab308" stroke-width="1" stroke-dasharray="3,2"/>
+    <text x="720" y="474" text-anchor="middle" font-size="9" font-weight="600" fill="#854d0e">💡 스냅샷 패턴의 의미</text>
+    <text x="720" y="490" text-anchor="middle" font-size="9" fill="#a16207">메뉴명/가격 변경 후에도 과거 주문 기록의 금액은 불변</text>
+  </g>
+
+  <!-- Response arrow back -->
+  <line x1="505" y1="380" x2="440" y2="380" stroke="#16a34a" stroke-width="2" stroke-dasharray="5,3"/>
+  <text x="472" y="375" text-anchor="middle" font-size="8" fill="#16a34a">201 Created</text>
+
+  <!-- Step 6: After order -->
+  <g filter="url(#s)">
+    <rect x="60" y="378" width="380" height="40" rx="8" fill="#d1fae5"/>
+    <text x="250" y="399" text-anchor="middle" font-size="11" font-weight="600" fill="#065f46">⑥ 완료: clearCart() → 주문내역 탭 전환</text>
+    <text x="250" y="412" text-anchor="middle" font-size="9" fill="#059669">토스트: "카카오페이로 결제 완료! (23,800원)"</text>
+  </g>
+
+  <!-- Kanban note -->
+  <g filter="url(#s)">
+    <rect x="60" y="434" width="380" height="60" rx="8" fill="#eff6ff" stroke="#93c5fd" stroke-width="1"/>
+    <text x="250" y="455" text-anchor="middle" font-size="11" font-weight="700" fill="#1e40af">매장 관리자: 칸반 보드에서 상태 관리</text>
+    <rect x="90" y="466" width="56" height="18" rx="4" fill="#fef3c7"/><text x="118" y="479" text-anchor="middle" font-size="8" font-weight="600" fill="#92400e">대기</text>
+    <text x="156" y="479" font-size="10" fill="#9ca3af">→</text>
+    <rect x="168" y="466" width="56" height="18" rx="4" fill="#dbeafe"/><text x="196" y="479" text-anchor="middle" font-size="8" font-weight="600" fill="#1e40af">접수</text>
+    <text x="234" y="479" font-size="10" fill="#9ca3af">→</text>
+    <rect x="246" y="466" width="56" height="18" rx="4" fill="#fee2e2"/><text x="274" y="479" text-anchor="middle" font-size="8" font-weight="600" fill="#dc2626">준비중</text>
+    <text x="312" y="479" font-size="10" fill="#9ca3af">→</text>
+    <rect x="324" y="466" width="56" height="18" rx="4" fill="#d1fae5"/><text x="352" y="479" text-anchor="middle" font-size="8" font-weight="600" fill="#065f46">완료</text>
+  </g>
+
+  <!-- Store override note -->
+  <g filter="url(#s)">
+    <rect x="60" y="508" width="380" height="48" rx="8" fill="#f5f3ff" stroke="#c4b5fd" stroke-width="1"/>
+    <text x="250" y="528" text-anchor="middle" font-size="10" font-weight="700" fill="#5b21b6">본사-매장 오버라이드 패턴</text>
+    <text x="250" y="544" text-anchor="middle" font-size="9" fill="#7c3aed">Menu(본사 마스터) + StoreMenu(매장별 가격/품절) → LEFT JOIN 병합</text>
+  </g>
+</svg>

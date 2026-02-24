@@ -1,12 +1,21 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getApiSession } from "@/lib/auth";
 
 /**
  * GET /api/dashboard/hq
  * 본사 대시보드 통계 (매장 현황, 게임수, 전체 주문/매출)
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    // 인증: HQ_ADMIN만 접근 허용
+    const session = await getApiSession(request);
+    if (!session) {
+      return NextResponse.json({ error: "인증이 필요합니다." }, { status: 401 });
+    }
+    if (session.role !== "HQ_ADMIN") {
+      return NextResponse.json({ error: "본사 관리자 권한이 필요합니다." }, { status: 403 });
+    }
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     const todayEnd = new Date();

@@ -103,7 +103,7 @@ function AdminLoginForm() {
         return;
       }
 
-      router.push(data.redirect);
+      window.location.href = data.redirect;
     } catch {
       setError("서버 연결에 실패했습니다.");
     } finally {
@@ -214,7 +214,7 @@ function TableLoginForm() {
         return;
       }
 
-      router.push(data.redirect);
+      window.location.href = data.redirect;
     } catch {
       setError("서버 연결에 실패했습니다.");
     } finally {

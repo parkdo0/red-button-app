@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
         maxPlayers,
         recommendedPlayers: recommendedPlayers ?? `${minPlayers}-${maxPlayers}인`,
         playTime: playTime ?? null,
-        playTimeCategory: playTimeCategory ?? null,
+        playTimeCategory: playTimeCategory ?? "",
         difficulty,
         defaultShelfLoc: defaultShelfLoc ?? "",
         // 태그 연결
