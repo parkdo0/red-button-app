@@ -89,8 +89,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           )}
         </nav>
 
-        {/* 하단: 태블릿 앱 링크 */}
-        <div className="border-t border-gray-200 px-4 py-3">
+        {/* 하단: 사용자 정보 + 로그아웃 + 태블릿 링크 */}
+        <div className="border-t border-gray-200 px-4 py-3 flex flex-col gap-2">
+          {/* 현재 계정 정보 */}
+          {session && (
+            <div className="rounded-lg bg-gray-50 px-3 py-2">
+              <p className="text-[10px] text-gray-400">
+                {session.role === "HQ_ADMIN" ? "본사 관리자" : "매장 관리자"}
+              </p>
+              <p className="text-[12px] font-bold text-gray-700 truncate">
+                {session.role === "STORE_ADMIN" ? session.storeName : "본사"}
+              </p>
+            </div>
+          )}
+
+          {/* 로그아웃 */}
+          <LogoutButton />
+
+          {/* 태블릿 앱 링크 */}
           <Link
             href="/"
             className="flex items-center gap-2 text-[12px] text-gray-400 hover:text-red-600 transition-colors"
@@ -291,5 +307,60 @@ function NavList({ items, pathname }: { items: NavItemDef[]; pathname: string })
         );
       })}
     </div>
+  );
+}
+
+// ──────────────────────────────────────
+// 로그아웃 버튼
+// ──────────────────────────────────────
+function LogoutButton() {
+  const [confirming, setConfirming] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleLogout = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/logout", { method: "POST" });
+      if (res.ok) {
+        window.location.href = "/login";
+      }
+    } catch {
+      setLoading(false);
+      setConfirming(false);
+    }
+  };
+
+  if (confirming) {
+    return (
+      <div className="flex gap-1.5">
+        <button
+          onClick={handleLogout}
+          disabled={loading}
+          className="flex-1 rounded-lg bg-red-600 py-1.5 text-[11px] font-bold text-white hover:bg-red-700 transition-colors disabled:opacity-50"
+        >
+          {loading ? "로그아웃 중..." : "확인"}
+        </button>
+        <button
+          onClick={() => setConfirming(false)}
+          className="flex-1 rounded-lg border border-gray-200 py-1.5 text-[11px] font-medium text-gray-500 hover:bg-gray-50 transition-colors"
+        >
+          취소
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => setConfirming(true)}
+      className="flex items-center gap-2 text-[12px] text-gray-400 hover:text-red-600 transition-colors"
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+        <polyline points="16 17 21 12 16 7" />
+        <line x1="21" y1="12" x2="9" y2="12" />
+      </svg>
+      로그아웃
+    </button>
   );
 }

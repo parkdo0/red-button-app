@@ -338,7 +338,7 @@ export default function StoreChatPage() {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && sendMessage()}
               placeholder="메시지를 입력하세요..."
-              className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm focus:border-red-300 focus:outline-none"
+              className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm placeholder:text-gray-400 placeholder:italic placeholder:font-light focus:border-red-300 focus:outline-none"
             />
             <button
               onClick={sendMessage}

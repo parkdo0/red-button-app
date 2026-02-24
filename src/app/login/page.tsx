@@ -121,7 +121,7 @@ function AdminLoginForm() {
           onChange={(e) => setLoginId(e.target.value)}
           placeholder="관리자 아이디"
           autoComplete="username"
-          className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-red-300 focus:bg-white focus:outline-none transition-colors"
+          className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 placeholder:italic placeholder:font-light focus:border-red-300 focus:bg-white focus:outline-none transition-colors"
         />
       </div>
       <div>
@@ -132,7 +132,7 @@ function AdminLoginForm() {
           onChange={(e) => setPassword(e.target.value)}
           placeholder="비밀번호"
           autoComplete="current-password"
-          className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-red-300 focus:bg-white focus:outline-none transition-colors"
+          className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 placeholder:italic placeholder:font-light focus:border-red-300 focus:bg-white focus:outline-none transition-colors"
         />
       </div>
 
@@ -264,7 +264,7 @@ function TableLoginForm() {
           placeholder="4자리 코드"
           maxLength={4}
           disabled={!storeId}
-          className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 text-center tracking-[0.5em] font-bold uppercase placeholder:text-gray-400 placeholder:tracking-normal placeholder:font-normal focus:border-red-300 focus:bg-white focus:outline-none transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
+          className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 text-center tracking-[0.5em] font-bold uppercase placeholder:text-gray-400 placeholder:tracking-normal placeholder:font-normal placeholder:italic focus:border-red-300 focus:bg-white focus:outline-none transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
         />
       </div>
 

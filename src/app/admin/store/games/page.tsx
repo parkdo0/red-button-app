@@ -113,7 +113,7 @@ export default function StoreGamesPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="게임명 검색..."
-              className="w-full rounded-lg border border-gray-200 bg-gray-50 pl-9 pr-3 py-2 text-sm focus:border-red-300 focus:bg-white focus:outline-none"
+              className="w-full rounded-lg border border-gray-200 bg-gray-50 pl-9 pr-3 py-2 text-sm placeholder:text-gray-400 placeholder:italic placeholder:font-light focus:border-red-300 focus:bg-white focus:outline-none"
             />
           </div>
           <div className="flex rounded-lg border border-gray-200 overflow-hidden">
@@ -186,7 +186,7 @@ export default function StoreGamesPage() {
                         value={game.shelfLocation ?? ""}
                         onChange={(e) => updateShelfLocation(game, e.target.value)}
                         placeholder={game.defaultShelfLoc}
-                        className="w-full rounded border border-gray-200 bg-gray-50 px-2 py-1 text-xs text-gray-700 focus:border-red-300 focus:outline-none"
+                        className="w-full rounded border border-gray-200 bg-gray-50 px-2 py-1 text-xs text-gray-700 placeholder:text-gray-400 placeholder:italic placeholder:font-light focus:border-red-300 focus:outline-none"
                       />
                     ) : (
                       <span className="text-xs text-gray-300">—</span>

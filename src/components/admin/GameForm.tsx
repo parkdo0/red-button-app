@@ -490,5 +490,5 @@ function Field({ label, required, error, children }: {
 function inputClass(error?: string): string {
   return `w-full rounded-lg border ${
     error ? "border-red-300 bg-red-50/30" : "border-gray-200 bg-gray-50"
-  } px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-red-300 focus:bg-white focus:outline-none focus:ring-1 focus:ring-red-200`;
+  } px-3 py-2 text-sm text-gray-900 placeholder-gray-400 placeholder:italic placeholder:font-light focus:border-red-300 focus:bg-white focus:outline-none focus:ring-1 focus:ring-red-200`;
 }

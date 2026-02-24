@@ -18,34 +18,40 @@ export function useSession() {
   return useContext(SessionContext);
 }
 
-/** 폴링 간격 (5분) */
-const POLL_INTERVAL = 5 * 60 * 1000;
+/** 폴링 간격 */
+const ADMIN_POLL_INTERVAL = 5 * 60 * 1000; // 관리자: 5분
+const TABLE_POLL_INTERVAL = 30 * 1000;      // 테이블: 30초
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<SessionInfo | null>(null);
   const [expired, setExpired] = useState(false);
+  const [checkedOut, setCheckedOut] = useState(false);
   const pathname = usePathname();
 
-  // 로그인 페이지에서는 폴링/만료 체크 불필요
   const isLoginPage = pathname === "/login";
 
   const checkSession = useCallback(async () => {
     try {
       const res = await fetch("/api/auth/session");
-      if (res.ok) {
-        const data = await res.json();
-        if (data.authenticated) {
-          setSession(data);
-          setExpired(false);
-          return;
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok && data.authenticated) {
+        setSession(data);
+        setExpired(false);
+        setCheckedOut(false);
+        return;
+      }
+
+      // 401 응답 처리
+      if (!isLoginPage && session !== null) {
+        if (data.reason === "checked_out") {
+          setCheckedOut(true);
+        } else {
+          setExpired(true);
         }
       }
-      // 401 또는 authenticated=false → 세션 만료
-      if (!isLoginPage && session !== null) {
-        setExpired(true);
-      }
     } catch {
-      // 네트워크 오류는 무시 (오프라인 등)
+      // 네트워크 오류 무시
     }
   }, [isLoginPage, session]);
 
@@ -55,23 +61,25 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     checkSession();
   }, [isLoginPage]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // 폴링
+  // 폴링 — 역할에 따라 간격 다르게
   useEffect(() => {
-    if (isLoginPage || expired) return;
-    const interval = setInterval(checkSession, POLL_INTERVAL);
-    return () => clearInterval(interval);
-  }, [isLoginPage, expired, checkSession]);
+    if (isLoginPage || expired || checkedOut) return;
+    const interval = session?.role === "TABLE" ? TABLE_POLL_INTERVAL : ADMIN_POLL_INTERVAL;
+    const timer = setInterval(checkSession, interval);
+    return () => clearInterval(timer);
+  }, [isLoginPage, expired, checkedOut, checkSession, session?.role]);
 
   return (
     <SessionContext.Provider value={session}>
       {children}
-      {expired && <SessionExpiredOverlay />}
+      {expired && !checkedOut && <SessionExpiredOverlay />}
+      {checkedOut && <CheckedOutOverlay />}
     </SessionContext.Provider>
   );
 }
 
 // ──────────────────────────────────────
-// 세션 만료 오버레이
+// 세션 만료 오버레이 (기존)
 // ──────────────────────────────────────
 function SessionExpiredOverlay() {
   const handleLogin = () => {
@@ -81,7 +89,6 @@ function SessionExpiredOverlay() {
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm">
       <div className="mx-4 w-full max-w-sm rounded-2xl bg-white p-8 text-center shadow-2xl">
-        {/* 아이콘 */}
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="10" />
@@ -103,6 +110,58 @@ function SessionExpiredOverlay() {
         >
           로그인 화면으로
         </button>
+      </div>
+    </div>
+  );
+}
+
+// ──────────────────────────────────────
+// 퇴장 처리 오버레이 (토스트 스타일 → 자동 리다이렉트)
+// ──────────────────────────────────────
+function CheckedOutOverlay() {
+  const [countdown, setCountdown] = useState(3);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          window.location.href = "/login";
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm animate-backdrop">
+      <div className="mx-4 w-full max-w-sm rounded-3xl bg-bg-secondary border border-border-default p-8 text-center shadow-2xl animate-modal">
+        {/* 아이콘 */}
+        <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-red-primary/10">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#E5244D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+        </div>
+
+        <h2 className="mb-2 text-xl font-bold text-text-primary">
+          퇴장 처리되었습니다
+        </h2>
+        <p className="mb-4 text-sm text-text-secondary">
+          이용해 주셔서 감사합니다.<br />
+          {countdown}초 후 초기 화면으로 이동합니다.
+        </p>
+
+        {/* 프로그레스 바 */}
+        <div className="mx-auto w-48 h-1 rounded-full bg-bg-card overflow-hidden">
+          <div
+            className="h-full bg-red-primary rounded-full transition-all duration-1000 ease-linear"
+            style={{ width: `${((3 - countdown) / 3) * 100}%` }}
+          />
+        </div>
       </div>
     </div>
   );
