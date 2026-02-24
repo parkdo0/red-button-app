@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { IconWifi, IconGuide, IconCustomerFeedback, IconClock } from "@/components/icons/AppIcons";
 
 interface Props {
   storeName: string;
@@ -54,7 +55,7 @@ export default function InfoClient({ storeName, tableNo, wifiId, wifiPw, checkIn
       <div className="grid grid-cols-3 gap-4 px-8 pb-8">
         {/* Wi-Fi */}
         <div className="rb-card p-6 flex flex-col items-center text-center">
-          <div className="mb-3 text-4xl"></div>
+          <div className="mb-3"><IconWifi /></div>
           <h3 className="text-lg font-bold text-blue-400">Wi-Fi</h3>
           <div className="mt-4 flex flex-col gap-1">
             <div>
@@ -73,7 +74,7 @@ export default function InfoClient({ storeName, tableNo, wifiId, wifiPw, checkIn
           onClick={() => setShowGuide(true)}
           className="rb-card rb-card-glow p-6 flex flex-col items-center text-center cursor-pointer touch-feedback"
         >
-          <div className="mb-3 text-4xl"></div>
+          <div className="mb-3"><IconGuide /></div>
           <h3 className="text-lg font-bold text-text-primary">이용 안내</h3>
           <p className="mt-2 text-xs text-text-muted leading-relaxed">
             레드버튼 이용 방법을<br />설명해 드립니다
@@ -90,7 +91,7 @@ export default function InfoClient({ storeName, tableNo, wifiId, wifiPw, checkIn
           onClick={() => setShowFeedback(true)}
           className="rb-card rb-card-glow p-6 flex flex-col items-center text-center cursor-pointer touch-feedback"
         >
-          <div className="mb-3 text-4xl"></div>
+          <div className="mb-3"><IconCustomerFeedback /></div>
           <h3 className="text-lg font-bold text-text-primary">고객 의견</h3>
           <p className="mt-2 text-xs text-text-muted leading-relaxed">
             레드버튼 본사로 여러분의<br />제안이나 의견을 보내주세요
@@ -119,7 +120,7 @@ export default function InfoClient({ storeName, tableNo, wifiId, wifiPw, checkIn
         <Modal title="이용 안내" onClose={() => setShowGuide(false)}>
           <div className="flex flex-col gap-4 text-sm text-text-secondary leading-relaxed">
             <div>
-              <h4 className="font-bold text-text-primary mb-1">⏰ 이용 시간</h4>
+              <h4 className="font-bold text-text-primary mb-1 flex items-center gap-1.5"><IconClock /> 이용 시간</h4>
               <p>기본 2시간 이용이며, 연장은 카운터에서 가능합니다.</p>
             </div>
             <div>
@@ -179,7 +180,7 @@ export default function InfoClient({ storeName, tableNo, wifiId, wifiPw, checkIn
                   : "bg-bg-card text-text-muted cursor-not-allowed"
               }`}
             >
-              {submitted ? "✅ 제출 완료!" : submitting ? "제출 중..." : "제출하기"}
+              {submitted ? "제출 완료!" : submitting ? "제출 중..." : "제출하기"}
             </button>
           </div>
         </Modal>

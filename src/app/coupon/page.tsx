@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useSession } from "@/components/SessionProvider";
+import { IconCelebration } from "@/components/icons/AppIcons";
 
 interface CouponInfo {
   id: number;
@@ -95,7 +96,7 @@ export default function CouponPage() {
           /* 사용 완료 */
           <div className="w-full max-w-md text-center">
             <div className="rounded-3xl bg-bg-card border border-border-default p-8">
-              <div className="text-5xl mb-4">🎉</div>
+              <div className="flex justify-center mb-4 text-red-primary"><IconCelebration size={48} /></div>
               <h2 className="text-xl font-bold text-text-primary mb-2">쿠폰이 적용되었습니다!</h2>
               <p className="text-sm text-text-muted mb-1">{coupon?.name}</p>
               <p className="text-2xl font-black text-red-primary">

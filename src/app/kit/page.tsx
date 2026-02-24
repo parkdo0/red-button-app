@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, type ReactNode } from "react";
+import { IconRoulette, IconFirstPicker, IconTeamPicker } from "@/components/icons/AppIcons";
 
 interface KitTool {
   id: string;
@@ -9,7 +10,7 @@ interface KitTool {
   buttonLabel: string;
   gradient: string;
   buttonColor: string;
-  emoji: string;
+  icon: ReactNode;
   badge?: string;
 }
 
@@ -21,7 +22,7 @@ const KIT_TOOLS: KitTool[] = [
     buttonLabel: "룰렛 굴리기",
     gradient: "from-pink-600 via-rose-500 to-pink-700",
     buttonColor: "bg-pink-400 hover:bg-pink-500",
-    emoji: "",
+    icon: <IconRoulette />,
     badge: "HOT",
   },
   {
@@ -31,7 +32,7 @@ const KIT_TOOLS: KitTool[] = [
     buttonLabel: "선 정하기",
     gradient: "from-cyan-600 via-cyan-500 to-teal-600",
     buttonColor: "bg-cyan-400 hover:bg-cyan-500",
-    emoji: "⭐",
+    icon: <IconFirstPicker />,
   },
   {
     id: "team",
@@ -40,20 +41,20 @@ const KIT_TOOLS: KitTool[] = [
     buttonLabel: "팀 정하기",
     gradient: "from-violet-600 via-purple-500 to-violet-700",
     buttonColor: "bg-violet-400 hover:bg-violet-500",
-    emoji: "",
+    icon: <IconTeamPicker />,
   },
 ];
 
 /** 벌칙 목록 */
 const PUNISHMENTS = [
-  "물 한 잔 원샷! ",
-  "30초 안에 자기소개 랩 하기 ",
-  "옆 사람 칭찬 3개 하기 ",
-  "개인기 하나 보여주기 ",
-  "1분 동안 말 안 하기 ",
-  "다음 판 핸디캡! ",
-  "얼음 하나 입에 넣고 10초 ",
-  "가장 좋아하는 노래 한 소절 ",
+  "물 한 잔 원샷!",
+  "30초 안에 자기소개 랩 하기",
+  "옆 사람 칭찬 3개 하기",
+  "개인기 하나 보여주기",
+  "1분 동안 말 안 하기",
+  "다음 판 핸디캡!",
+  "얼음 하나 입에 넣고 10초",
+  "가장 좋아하는 노래 한 소절",
 ];
 
 /**
@@ -78,9 +79,9 @@ export default function KitPage() {
               </span>
             )}
 
-            {/* 이모지 */}
+            {/* 아이콘 */}
             <div className="flex-1 flex items-center justify-center">
-              <span className="text-7xl drop-shadow-lg">{tool.emoji}</span>
+              {tool.icon}
             </div>
 
             {/* 텍스트 */}
@@ -138,7 +139,7 @@ function RouletteModal({ onClose }: { onClose: () => void }) {
   }, []);
 
   return (
-    <ToolModal title="벌칙 룰렛 " onClose={onClose}>
+    <ToolModal title="벌칙 룰렛" onClose={onClose}>
       <div className="flex flex-col items-center gap-6 py-4">
         <div className={`flex h-32 w-full items-center justify-center rounded-2xl bg-bg-card border border-border-default ${spinning ? "animate-pulse" : ""}`}>
           {spinning ? (

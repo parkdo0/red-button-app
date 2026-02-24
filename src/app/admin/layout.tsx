@@ -3,7 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, SessionContext } from "@/components/SessionProvider";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, type ReactNode } from "react";
+import {
+  IconDashboard, IconGames, IconMenus, IconStar, IconEvents,
+  IconStores, IconTags, IconCoupons, IconFeedback,
+  IconOrders, IconTables, IconChat, IconSettings, IconStorefront,
+} from "@/components/icons/AdminIcons";
 
 /**
  * 관리자 공통 레이아웃
@@ -30,7 +35,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       return (
         <div className="flex h-full items-center justify-center text-gray-400">
           <div className="text-center">
-            <p className="text-4xl mb-4">🏪</p>
+            <div className="mb-4 flex justify-center"><IconStorefront /></div>
             <p className="text-lg font-bold text-gray-600 mb-2">매장을 선택해주세요</p>
             <p className="text-sm">좌측 사이드바에서 관리할 매장을 선택하세요</p>
           </div>
@@ -139,15 +144,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 // ──────────────────────────────────────
 function HQNav({ pathname }: { pathname: string }) {
   const items: NavItemDef[] = [
-    { href: "/admin/hq", label: "대시보드", icon: "", exact: true },
-    { href: "/admin/hq/games", label: "게임 관리", icon: "" },
-    { href: "/admin/hq/menus", label: "메뉴 관리", icon: "" },
-    { href: "/admin/hq/recommend", label: "추천 편성", icon: "⭐" },
-    { href: "/admin/hq/events", label: "이벤트 관리", icon: "" },
-    { href: "/admin/hq/stores", label: "매장 현황", icon: "" },
-    { href: "/admin/hq/tags", label: "태그 관리", icon: "" },
-    { href: "/admin/hq/coupons", label: "쿠폰 관리", icon: "🎟️" },
-    { href: "/admin/hq/feedback", label: "고객 의견", icon: "📬" },
+    { href: "/admin/hq", label: "대시보드", icon: <IconDashboard />, exact: true },
+    { href: "/admin/hq/games", label: "게임 관리", icon: <IconGames /> },
+    { href: "/admin/hq/menus", label: "메뉴 관리", icon: <IconMenus /> },
+    { href: "/admin/hq/recommend", label: "추천 편성", icon: <IconStar /> },
+    { href: "/admin/hq/events", label: "이벤트 관리", icon: <IconEvents /> },
+    { href: "/admin/hq/stores", label: "매장 현황", icon: <IconStores /> },
+    { href: "/admin/hq/tags", label: "태그 관리", icon: <IconTags /> },
+    { href: "/admin/hq/coupons", label: "쿠폰 관리", icon: <IconCoupons /> },
+    { href: "/admin/hq/feedback", label: "고객 의견", icon: <IconFeedback /> },
   ];
 
   return <NavList items={items} pathname={pathname} />;
@@ -204,13 +209,13 @@ function StoreNav({ pathname, isHQAdmin, selectedStore, onSelectStore }: {
   }, [fetchChatUnread]);
 
   const items: NavItemDef[] = [
-    { href: "/admin/store", label: "대시보드", icon: "", exact: true },
-    { href: "/admin/store/orders", label: "주문 관리", icon: "" },
-    { href: "/admin/store/games", label: "게임 노출", icon: "" },
-    { href: "/admin/store/menus", label: "메뉴 관리", icon: "" },
-    { href: "/admin/store/tables", label: "테이블 현황", icon: "" },
-    { href: "/admin/store/chat", label: "카운터 쪽지", icon: "", badge: chatUnread },
-    { href: "/admin/store/settings", label: "매장 설정", icon: "" },
+    { href: "/admin/store", label: "대시보드", icon: <IconDashboard />, exact: true },
+    { href: "/admin/store/orders", label: "주문 관리", icon: <IconOrders /> },
+    { href: "/admin/store/games", label: "게임 노출", icon: <IconGames /> },
+    { href: "/admin/store/menus", label: "메뉴 관리", icon: <IconMenus /> },
+    { href: "/admin/store/tables", label: "테이블 현황", icon: <IconTables /> },
+    { href: "/admin/store/chat", label: "카운터 쪽지", icon: <IconChat />, badge: chatUnread },
+    { href: "/admin/store/settings", label: "매장 설정", icon: <IconSettings /> },
   ];
 
   return (
@@ -273,7 +278,7 @@ function StoreNav({ pathname, isHQAdmin, selectedStore, onSelectStore }: {
 interface NavItemDef {
   href: string;
   label: string;
-  icon: string;
+  icon: ReactNode;
   exact?: boolean;
   badge?: number;
 }
@@ -296,7 +301,7 @@ function NavList({ items, pathname }: { items: NavItemDef[]; pathname: string })
                 : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
             }`}
           >
-            <span className="text-sm">{item.icon}</span>
+            <span className="flex w-4 h-4 items-center justify-center shrink-0">{item.icon}</span>
             <span className="flex-1">{item.label}</span>
             {item.badge !== undefined && item.badge > 0 && (
               <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1.5 text-[10px] font-bold text-white">
