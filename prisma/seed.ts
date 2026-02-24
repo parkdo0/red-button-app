@@ -276,7 +276,33 @@ async function main() {
       shelfLocation: gameId === 4 ? "ㅁ-2" : null, // 도미니언만 오버라이드
     })),
   });
-  console.log(`  ${storeGameIds.length} store games linked`);
+  console.log(`  ${storeGameIds.length} store games linked (수원점)`);
+
+  // 강남점: 전체 20개 게임 보유
+  const allGameIds = gamesData.map((g) => g.id);
+  await prisma.storeGame.createMany({
+    data: allGameIds.map((gameId) => ({
+      storeId: 2, gameId, isVisible: true, shelfLocation: null,
+    })),
+  });
+  console.log(`  ${allGameIds.length} store games linked (강남점)`);
+
+  // 홍대점: 전체 게임 보유
+  await prisma.storeGame.createMany({
+    data: allGameIds.map((gameId) => ({
+      storeId: 3, gameId, isVisible: true, shelfLocation: null,
+    })),
+  });
+  console.log(`  ${allGameIds.length} store games linked (홍대점)`);
+
+  // 부산서면점: 일부 게임만 (10개)
+  const busanGameIds = [1, 2, 3, 7, 8, 9, 12, 13, 16, 19];
+  await prisma.storeGame.createMany({
+    data: busanGameIds.map((gameId) => ({
+      storeId: 4, gameId, isVisible: true, shelfLocation: null,
+    })),
+  });
+  console.log(`  ${busanGameIds.length} store games linked (부산서면점)`);
 
   // ============================================
   // 8. 매장별 메뉴 (StoreMenu) - 수원점 전체 메뉴 판매
@@ -287,7 +313,32 @@ async function main() {
       storeId: 1, menuId: m.id, isAvailable: true, priceOverride: null,
     })),
   });
-  console.log(`  ${menusData.length} store menus linked`);
+  console.log(`  ${menusData.length} store menus linked (수원점)`);
+
+  // 강남점: 전체 메뉴
+  await prisma.storeMenu.createMany({
+    data: menusData.map((m) => ({
+      storeId: 2, menuId: m.id, isAvailable: true, priceOverride: null,
+    })),
+  });
+  console.log(`  ${menusData.length} store menus linked (강남점)`);
+
+  // 홍대점: 전체 메뉴
+  await prisma.storeMenu.createMany({
+    data: menusData.map((m) => ({
+      storeId: 3, menuId: m.id, isAvailable: true, priceOverride: null,
+    })),
+  });
+  console.log(`  ${menusData.length} store menus linked (홍대점)`);
+
+  // 부산서면점: 전체 메뉴 (일부 품절)
+  await prisma.storeMenu.createMany({
+    data: menusData.map((m) => ({
+      storeId: 4, menuId: m.id, isAvailable: m.id !== 15, // MD상품 품절
+      priceOverride: null,
+    })),
+  });
+  console.log(`  ${menusData.length} store menus linked (부산서면점)`);
 
   // ============================================
   // 9. 추천 카테고리 (홈 화면)
